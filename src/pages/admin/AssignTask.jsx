@@ -661,6 +661,7 @@ const getLastTaskId = async (sheetName) => {
   };
 
 // UPDATED: handleSubmit function with department-specific sheet logic
+// UPDATED: handleSubmit function with first-time user check logic
 const handleSubmit = async (e) => {
   e.preventDefault();
   setIsSubmitting(true);
@@ -679,40 +680,83 @@ const handleSubmit = async (e) => {
       return;
     }
 
-    // Helper function to check if date is today
-    const isToday = (dateStr) => {
-      // dateStr format: "DD/MM/YYYY HH:MM:SS"
-      const [datePart] = dateStr.split(' ');
-      const [day, month, year] = datePart.split('/').map(Number);
-      const taskDate = new Date(year, month - 1, day);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      taskDate.setHours(0, 0, 0, 0);
-      return taskDate.getTime() === today.getTime();
+    // Helper function to check if this is the first task for the user
+    const isFirstTaskForUser = async (doerName) => {
+      try {
+        const sheetId = "1nBT7umzLfh1sR8O44sk4s6W50TUQ3duNrW8rnLLs_Mw";
+        const sheetName = "Checklist";
+
+        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(
+          sheetName
+        )}`;
+
+        const response = await fetch(url);
+        if (!response.ok) {
+          // If Checklist sheet doesn't exist or can't be fetched, consider it as first task
+          console.log("Checklist sheet not found - treating as first task");
+          return true;
+        }
+
+        const text = await response.text();
+        const jsonStart = text.indexOf("{");
+        const jsonEnd = text.lastIndexOf("}");
+        const jsonString = text.substring(jsonStart, jsonEnd + 1);
+        const data = JSON.parse(jsonString);
+
+        if (!data.table || !data.table.rows || data.table.rows.length <= 1) {
+          // No data in Checklist (only header), so it's first task
+          console.log("Checklist sheet is empty - treating as first task");
+          return true;
+        }
+
+        // Check if doer name exists in column E (index 4) - "name" column
+        for (let i = 1; i < data.table.rows.length; i++) {
+          const row = data.table.rows[i];
+          if (row.c && row.c[4] && row.c[4].v) {
+            const existingDoer = row.c[4].v.toString().trim();
+            if (existingDoer === doerName.trim()) {
+              // User already has a task in Checklist
+              console.log(`User "${doerName}" found in Checklist - NOT first task`);
+              return false;
+            }
+          }
+        }
+
+        // User not found in Checklist, so it's their first task
+        console.log(`User "${doerName}" NOT found in Checklist - IS first task`);
+        return true;
+      } catch (error) {
+        console.error("Error checking first task:", error);
+        // On error, assume it's first task to be safe
+        return true;
+      }
     };
 
-    // NEW: Determine the sheet(s) based on frequency and date:
+    // Determine the sheet(s) based on frequency and first-time user check:
     // - "one-time" frequency → DELEGATION sheet only
-    // - Other frequencies + current date → Both "Unique" AND "Checklist" sheets
-    // - Other frequencies + future date → "Unique" sheet only
+    // - Other frequencies + first time user → Both "Unique" AND "Checklist" sheets
+    // - Other frequencies + existing user → "Unique" sheet only
     let submitToSheets = [];
     
     if (formData.frequency === "one-time") {
       submitToSheets = ["DELEGATION"];
+      console.log("One-time task - submitting to DELEGATION only");
     } else {
-      // Check if the task date is today
-      const taskDateStr = generatedTasks[0].dueDate;
-      if (isToday(taskDateStr)) {
-        // Submit to both sheets
+      // Check if this is the first task for the user
+      const isFirstTask = await isFirstTaskForUser(formData.doer);
+      if (isFirstTask) {
+        // Submit to both sheets for first-time user
         submitToSheets = ["Unique", "Checklist"];
+        console.log("First task for user - submitting to both Unique and Checklist");
       } else {
-        // Submit to Unique sheet only
+        // Submit to Unique sheet only for existing user
         submitToSheets = ["Unique"];
+        console.log("Existing user - submitting to Unique only");
       }
     }
 
     console.log(`Selected department: ${formData.department}`);
-    console.log(`Task date: ${generatedTasks[0].dueDate}`);
+    console.log(`Doer: ${formData.doer}`);
     console.log(`Target sheets: ${submitToSheets.join(', ')}`);
 
     // Submit to each target sheet
