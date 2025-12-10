@@ -660,7 +660,6 @@ const getLastTaskId = async (sheetName) => {
     }
   };
 
-// UPDATED: handleSubmit function with department-specific sheet logic
 // UPDATED: handleSubmit function with first-time user check logic
 const handleSubmit = async (e) => {
   e.preventDefault();
@@ -692,7 +691,6 @@ const handleSubmit = async (e) => {
 
         const response = await fetch(url);
         if (!response.ok) {
-          // If Checklist sheet doesn't exist or can't be fetched, consider it as first task
           console.log("Checklist sheet not found - treating as first task");
           return true;
         }
@@ -704,7 +702,6 @@ const handleSubmit = async (e) => {
         const data = JSON.parse(jsonString);
 
         if (!data.table || !data.table.rows || data.table.rows.length <= 1) {
-          // No data in Checklist (only header), so it's first task
           console.log("Checklist sheet is empty - treating as first task");
           return true;
         }
@@ -715,41 +712,32 @@ const handleSubmit = async (e) => {
           if (row.c && row.c[4] && row.c[4].v) {
             const existingDoer = row.c[4].v.toString().trim();
             if (existingDoer === doerName.trim()) {
-              // User already has a task in Checklist
               console.log(`User "${doerName}" found in Checklist - NOT first task`);
               return false;
             }
           }
         }
 
-        // User not found in Checklist, so it's their first task
         console.log(`User "${doerName}" NOT found in Checklist - IS first task`);
         return true;
       } catch (error) {
         console.error("Error checking first task:", error);
-        // On error, assume it's first task to be safe
         return true;
       }
     };
 
-    // Determine the sheet(s) based on frequency and first-time user check:
-    // - "one-time" frequency → DELEGATION sheet only
-    // - Other frequencies + first time user → Both "Unique" AND "Checklist" sheets
-    // - Other frequencies + existing user → "Unique" sheet only
+    // Determine the sheet(s) based on frequency and first-time user check
     let submitToSheets = [];
     
     if (formData.frequency === "one-time") {
       submitToSheets = ["DELEGATION"];
       console.log("One-time task - submitting to DELEGATION only");
     } else {
-      // Check if this is the first task for the user
       const isFirstTask = await isFirstTaskForUser(formData.doer);
       if (isFirstTask) {
-        // Submit to both sheets for first-time user
         submitToSheets = ["Unique", "Checklist"];
         console.log("First task for user - submitting to both Unique and Checklist");
       } else {
-        // Submit to Unique sheet only for existing user
         submitToSheets = ["Unique"];
         console.log("Existing user - submitting to Unique only");
       }
@@ -761,23 +749,35 @@ const handleSubmit = async (e) => {
 
     // Submit to each target sheet
     for (const sheetName of submitToSheets) {
-      // Get the last task ID from the current sheet
-      const lastTaskId = await getLastTaskId(sheetName);
+      // Get the last task ID from the current sheet (only for sheets that need it)
+      const needsTaskId = sheetName !== "Checklist";
+      const lastTaskId = needsTaskId ? await getLastTaskId(sheetName) : 0;
       let nextTaskId = lastTaskId + 1;
 
       // Prepare all tasks data for batch insertion
-      const tasksData = generatedTasks.map((task, index) => ({
-        timestamp: getCurrentTimestamp(),
-        taskId: (nextTaskId + index).toString(),
-        department: formData.department,
-        givenBy: formData.givenBy,
-        name: formData.doer,
-        description: task.description,
-        startDate: task.dueDate,
-        freq: task.frequency,
-        enableReminders: task.enableReminders ? "Yes" : "No",
-        requireAttachment: task.requireAttachment ? "Yes" : "No"
-      }));
+      const tasksData = generatedTasks.map((task, index) => {
+        const baseData = {
+          timestamp: getCurrentTimestamp(),
+          department: formData.department,
+          givenBy: formData.givenBy,
+          name: formData.doer,
+          description: task.description,
+          startDate: task.dueDate,
+          freq: task.frequency,
+          enableReminders: task.enableReminders ? "Yes" : "No",
+          requireAttachment: task.requireAttachment ? "Yes" : "No"
+        };
+
+        // Only add taskId for sheets other than Checklist
+        if (needsTaskId) {
+          return {
+            ...baseData,
+            taskId: (nextTaskId + index).toString()
+          };
+        }
+
+        return baseData;
+      });
 
       console.log(`Submitting ${tasksData.length} tasks to ${sheetName} sheet`);
 
