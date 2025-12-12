@@ -108,6 +108,34 @@ const formatDateForSheet = (dateString) => {
     return dateString;
   }
   
+  // Handle Google Sheets Date format: Date(2025,11,12,9,0,0)
+  if (typeof dateString === 'string' && dateString.startsWith('Date(')) {
+    try {
+      const match = dateString.match(/Date\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)\)/);
+      if (match) {
+        const year = parseInt(match[1], 10);
+        const month = parseInt(match[2], 10); // 0-based (0=Jan, 11=Dec)
+        const day = parseInt(match[3], 10);
+        const hour = parseInt(match[4], 10);
+        const minute = parseInt(match[5], 10);
+        const second = parseInt(match[6], 10);
+        
+        // Format to DD/MM/YYYY HH:MM:SS
+        const formattedDay = String(day).padStart(2, '0');
+        const formattedMonth = String(month + 1).padStart(2, '0'); // Convert to 1-based
+        const formattedYear = year;
+        const formattedHour = String(hour).padStart(2, '0');
+        const formattedMinute = String(minute).padStart(2, '0');
+        const formattedSecond = String(second).padStart(2, '0');
+        
+        return `${formattedDay}/${formattedMonth}/${formattedYear} ${formattedHour}:${formattedMinute}:${formattedSecond}`;
+      }
+    } catch (e) {
+      // Continue to other parsing methods
+    }
+  }
+  
+  // Handle Date object or ISO string
   try {
     const date = new Date(dateString);
     if (!isNaN(date.getTime())) {
@@ -166,28 +194,27 @@ const submitSelectedTasks = async () => {
       const newTaskId = lastTaskId + index + 1;
       const currentTimestamp = formatTimestampForSheet();
       
-      // Log to check data
-      console.log("Submitting task:", {
-        department: editedTask.Department,
-        givenBy: editedTask['Given By'],
-        name: editedTask.Name
+      // Log the original and formatted date for debugging
+      console.log("Date processing:", {
+        original: editedTask['Start Date'],
+        formatted: formatDateForSheet(editedTask['Start Date'])
       });
       
       return {
         timestamp: currentTimestamp,
         taskId: String(newTaskId),
-        department: editedTask.Department || "",  // This will be used for Unique sheet
+        department: editedTask.Department || "",
         givenBy: editedTask['Given By'] || "",
         name: editedTask.Name || "",
         description: editedTask['Task Description'] || "",
-        startDate: formatDateForSheet(editedTask['Start Date']),
+        startDate: formatDateForSheet(editedTask['Start Date']), // Use the improved function
         freq: editedTask.Frequency || "",
         enableReminders: editedTask.Reminders || "",
         requireAttachment: editedTask.Attachment || ""
       };
     });
 
-    console.log("Tasks to submit:", tasksToSubmit);
+    console.log("Final tasks to submit:", tasksToSubmit);
 
     const submitUrl = `${userAppScriptUrl}?sheetName=${CONFIG.CHECKLIST_SHEET}&action=insert&batchInsert=true`;
     const response = await fetch(submitUrl, {
@@ -309,8 +336,6 @@ const submitSelectedTasks = async () => {
   }, []);
 // **COMPLETE CORRECTED fetchChecklistData function** - Replace your entire fetchChecklistData function:
 
-// Update the fetchChecklistData function - find this section and replace:
-
 const fetchChecklistData = useCallback(async () => {
   if (!currentUser || userLoading) return;
 
@@ -332,18 +357,24 @@ const fetchChecklistData = useCallback(async () => {
 
       // Map columns according to your specification (B-J from Checklist sheet)
       const transformedData = rows.map((row, rowIndex) => {
+        // Handle Start Date field - convert from Google Sheets format if needed
+        let startDateValue = row.c[6]?.v || "";
+        if (typeof startDateValue === 'string' && startDateValue.startsWith('Date(')) {
+          startDateValue = formatDateForSheet(startDateValue);
+        }
+        
         const baseData = {
           _id: `checklist_${rowIndex}_${Math.random().toString(36).substring(2, 15)}`,
           _rowIndex: rowIndex + 2,
-          'Task ID': row.c[1]?.v || "",           // Column B - Task ID FROM SHEET
-          Department: row.c[2]?.v || "",          // Column C - Department
-          'Given By': row.c[3]?.v || "",          // Column D - Given By
-          Name: row.c[4]?.v || "",                // Column E - Name
-          'Task Description': row.c[5]?.v || "",  // Column F - Task Description
-          'Start Date': row.c[6]?.v || "",        // Column G - Start Date (RAW - exactly as in sheet)
-          Frequency: row.c[7]?.v || "",           // Column H - Frequency
-          Reminders: row.c[8]?.v || "",           // Column I - Reminders
-          Attachment: row.c[9]?.v || "",          // Column J - Attachment
+          'Task ID': row.c[1]?.v || "",
+          Department: row.c[2]?.v || "",
+          'Given By': row.c[3]?.v || "",
+          Name: row.c[4]?.v || "",
+          'Task Description': row.c[5]?.v || "",
+          'Start Date': startDateValue, // Use processed date
+          Frequency: row.c[7]?.v || "",
+          Reminders: row.c[8]?.v || "",
+          Attachment: row.c[9]?.v || "",
           Task: 'Checklist'
         };
         return baseData;
