@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { X, Play, Users, User, Video } from 'lucide-react'
 import AdminLayout from "../components/layout/AdminLayout";
 
-const HelpVideo = () => {
+const TrainingVideo  = () => {
     const [userRole, setUserRole] = useState("")
     const [username, setUsername] = useState("")
     const [isVideoPlaying, setIsVideoPlaying] = useState(false)
@@ -26,7 +26,7 @@ const HelpVideo = () => {
 
     // Different video URLs for admin and user
     const videoUrls = {
-        admin: "https://youtu.be/v2yqJc1CKBA?si=J_r0PAIlGOqkHsz3", // Admin video
+        admin: "https://www.youtube.com/watch?v=v2yqJc1CKBA", // Admin video
         user: "https://youtu.be/UL-EZE3c_pA"   // User video
     };
 
@@ -187,4 +187,4 @@ const HelpVideo = () => {
     )
 }
 
-export default HelpVideo
+export default TrainingVideo 

@@ -96,7 +96,7 @@ export default function AdminDashboard() {
     endDate.setHours(23, 59, 59, 999)
 
     if (startDate > endDate) {
-      alert("Start date must be before end date")
+      alert("End Date must be before end date")
       return
     }
 
@@ -987,7 +987,7 @@ export default function AdminDashboard() {
                         scope="col"
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                       >
-                        Task Start Date
+                        Task End Date
                       </th>
                       <th
                         scope="col"
@@ -1130,7 +1130,7 @@ export default function AdminDashboard() {
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
                     <div className="space-y-2 lg:col-span-1">
                       <label htmlFor="start-date" className="flex items-center text-purple-700 text-sm font-medium">
-                        Start Date
+                        End Date
                       </label>
                       <input
                         id="start-date"

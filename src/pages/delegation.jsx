@@ -1008,7 +1008,7 @@ const capturePhoto = async () => {
         // Map all columns with special handling for datetime columns
         for (let i = 0; i < 18; i++) {
           if (i === 0 || i === 6 || i === 10) {
-            // Task Start Date, Planned Date and other datetime columns - parse as datetime
+            // Task End Date, Planned Date and other datetime columns - parse as datetime
             rowData[`col${i}`] = rowValues[i]
               ? parseGoogleSheetsDateTime(String(rowValues[i]))
               : "";
@@ -1912,7 +1912,7 @@ const capturePhoto = async () => {
                           !accountData["col17"] ? "bg-yellow-50" : ""
                         }`}
                       >
-                        Task Start Date
+                        Task End Date
                       </th>
                       <th
                         className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px] ${
@@ -2303,9 +2303,9 @@ const capturePhoto = async () => {
               </div>
             </div>
 
-            {/* Start Date */}
+            {/* End Date */}
             <div className="flex justify-between items-center border-b pb-2">
-              <span className="font-medium text-gray-700">Start Date:</span>
+              <span className="font-medium text-gray-700">End Date:</span>
               <div className="text-sm text-gray-900 break-words">
                 {formatDateTimeForDisplay(account["col6"])}
               </div>

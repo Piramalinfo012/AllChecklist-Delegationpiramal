@@ -199,7 +199,7 @@ export default function AdminDashboard() {
     endDate.setHours(23, 59, 59, 999);
 
     if (startDate > endDate) {
-      alert("Start date must be before end date");
+      alert("End Date must be before end date");
       return;
     }
 
@@ -499,7 +499,7 @@ const fetchDepartmentData = async () => {
       // Convert task ID to string for consistency
       const taskIdStr = String(taskId).trim();
 
-      // Get task start date from Column G (index 6) - "Task Start Date"
+      // Get Task End Date from Column G (index 6) - "Task End Date"
       let taskStartDateValue = getCellValue(row, 6);
       const taskStartDate = taskStartDateValue ? parseGoogleSheetsDate(String(taskStartDateValue)) : '';
 
@@ -516,7 +516,7 @@ const fetchDepartmentData = async () => {
         // For CHECKLIST mode: Keep existing date filtering logic
         const taskStartDateObj = parseDateFromDDMMYYYY(taskStartDate);
 
-        // Process tasks that have a valid start date and are due up to tomorrow
+        // Process tasks that have a valid End Date and are due up to tomorrow
         if (!taskStartDateObj || taskStartDateObj > tomorrow) {
           return null; // Skip tasks beyond tomorrow
         }
@@ -812,7 +812,7 @@ const fetchDepartmentData = async () => {
             // For DELEGATION: Show all past date pending tasks (excluding today)
             return isDateInPast(task.taskStartDate) && !isDateToday(task.taskStartDate);
           } else {
-            // For CHECKLIST: Show tasks with start dates in the past (excluding today)
+            // For CHECKLIST: Show tasks with End Dates in the past (excluding today)
             return isDateInPast(task.taskStartDate) && !isDateToday(task.taskStartDate);
           }
         default:
@@ -1290,9 +1290,9 @@ const fetchDepartmentData = async () => {
               </div>
             </div>
 
-            {/* Task Start Date */}
+            {/* Task End Date */}
             <div className="flex justify-between items-center border-b pb-2">
-              <span className="font-medium text-gray-700">Start Date:</span>
+              <span className="font-medium text-gray-700">End Date:</span>
               <div className="text-sm text-gray-500 break-words">
                 {task.taskStartDate}
               </div>
@@ -1421,7 +1421,7 @@ const fetchDepartmentData = async () => {
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
                       <div className="space-y-2 lg:col-span-1">
                         <label htmlFor="start-date" className="flex items-center text-purple-700 text-sm font-medium">
-                          Start Date
+                          End Date
                         </label>
                         <input
                           id="start-date"
@@ -1881,7 +1881,7 @@ const fetchDepartmentData = async () => {
                       {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Given By</th> */}
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Start Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">End Date</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Frequency</th>
                     </tr>
                   </thead>
@@ -1935,7 +1935,7 @@ const fetchDepartmentData = async () => {
                     </div>
 
                     <div>
-                      <span className="text-xs font-medium text-gray-500">Start Date</span>
+                      <span className="text-xs font-medium text-gray-500">End Date</span>
                       <p className="text-sm text-gray-900">{task.taskStartDate}</p>
                     </div>
                   </div>

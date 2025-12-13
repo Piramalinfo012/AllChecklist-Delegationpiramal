@@ -671,7 +671,7 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
             assignedTo.toLowerCase() === currentUsername.toLowerCase();
           if (!isUserMatch && currentUserRole !== "admin") return;
   
-          const columnGValue = rowValues[6]; // Task Start Date
+          const columnGValue = rowValues[6]; // Task End Date
           const columnKValue = rowValues[10]; // Actual Date
           const columnMValue = rowValues[12]; // Status (DONE)
           const columnPValue = sheetType === 'checklist' ? rowValues[15] : rowValues[19]; // Admin Done column
@@ -705,7 +705,7 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
             { id: "col3", label: "Given By", type: "string" },
             { id: "col4", label: "Name", type: "string" },
             { id: "col5", label: "Task Description", type: "string" },
-            { id: "col6", label: "Task Start Date", type: "datetime" },
+            { id: "col6", label: "Task End Date", type: "datetime" },
             { id: "col7", label: "Freq", type: "string" },
             { id: "col8", label: "Enable Reminders", type: "string" },
             { id: "col9", label: "Require Attachment", type: "string" },
@@ -722,7 +722,7 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
             { id: "col3", label: "Given By", type: "string" },
             { id: "col4", label: "Name", type: "string" },
             { id: "col5", label: "Task Description", type: "string" },
-            { id: "col6", label: "Task Start Date", type: "datetime" },
+            { id: "col6", label: "Task End Date", type: "datetime" },
             { id: "col7", label: "Freq", type: "string" },
             { id: "col8", label: "Enable Reminders", type: "string" },
             { id: "col9", label: "Require Attachment", type: "string" },
@@ -1170,7 +1170,7 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
           Task Description
         </th>
         <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-yellow-50 min-w-[140px]">
-          Task Start Date & Time
+          Task End Date & Time
         </th>
         <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px]">
           Freq
@@ -1206,7 +1206,7 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
               (userRole === "admin" ? 2 : 0) + // Admin Done + Admin checkbox columns
               (userRole !== "admin" ? 1 : 0) + // Task ID column
               (userRole !== "admin" && isAdmin ? 3 : 0) + // Department, Given By, Name columns
-              7 + // Fixed columns (Task Description, Start Date, Freq, Require Attachment, Actual Date, Status, Remarks, Attachment)
+              7 + // Fixed columns (Task Description, End Date, Freq, Require Attachment, Actual Date, Status, Remarks, Attachment)
               (userRole !== "admin" && isAdmin ? 1 : 0) // Enable Reminders column
             }
             className="px-6 py-8 text-center"
@@ -1726,7 +1726,7 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
                           <div className="grid grid-cols-2 gap-4">
                             <div>
                               <span className="font-medium text-gray-700">
-                                Start Date:
+                                End Date:
                               </span>
                               <p className="text-sm text-gray-900">
                                 {history["col6"] || "—"}

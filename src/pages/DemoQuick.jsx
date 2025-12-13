@@ -180,7 +180,7 @@ export default function QuickTask() {
                         'Given By': row.c[1]?.v || "",
                         Name: row.c[2]?.v || "",
                         'Task Description': row.c[3]?.v || "",
-                        'Task Start Date': formatDate(row.c[4]?.v),
+                        'Task End Date': formatDate(row.c[4]?.v),
                         Freq: row.c[5]?.v || "",
                         'Enable Reminders': row.c[6]?.v || "",
                         'Require Attachment': row.c[7]?.v || "",
@@ -254,7 +254,7 @@ export default function QuickTask() {
                         'Given By': row.c[3]?.v || "",
                         Name: row.c[4]?.v || "",
                         'Task Description': row.c[5]?.v || "",
-                        'Task Start Date': formatDate(row.c[6]?.v),
+                        'Task End Date': formatDate(row.c[6]?.v),
                         Freq: row.c[7]?.v || "",
                         'Enable Reminders': row.c[8]?.v || "",
                         'Require Attachment': row.c[9]?.v || "",
@@ -626,7 +626,7 @@ export default function QuickTask() {
                                                 { key: 'Given By', label: 'Given By' },
                                                 { key: 'Name', label: 'Name' },
                                                 { key: 'Task Description', label: 'Task Description', minWidth: 'min-w-[300px]' },
-                                                { key: 'Task Start Date', label: 'Start Date', bg: 'bg-yellow-50' },
+                                                { key: 'Task End Date', label: 'End Date', bg: 'bg-yellow-50' },
                                                 { key: 'Freq', label: 'Frequency' },
                                                 { key: 'Enable Reminders', label: 'Reminders' },
                                                 { key: 'Require Attachment', label: 'Attachment' },
@@ -668,7 +668,7 @@ export default function QuickTask() {
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 bg-yellow-50">
-                                                        {task['Task Start Date'] || "—"}
+                                                        {task['Task End Date'] || "—"}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                         <span className={`px-2 py-1 rounded-full text-xs ${task.Freq === 'Daily' ? 'bg-blue-100 text-blue-800' :

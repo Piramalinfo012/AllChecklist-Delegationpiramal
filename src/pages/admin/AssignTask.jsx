@@ -510,7 +510,7 @@ const getLastTaskId = async (sheetName) => {
       });
 
       if (futureDates.length === 0) {
-        alert("No working days found on or after your selected date. Please choose a different start date or update the Working Day Calendar.");
+        alert("No working days found on or after your selected date. Please choose a different End Date or update the Working Day Calendar.");
         return;
       }
 
@@ -542,7 +542,7 @@ const getLastTaskId = async (sheetName) => {
 
       setGeneratedTasks(tasks);
     } else {
-      // For recurring frequencies, generate only ONE task with the start date
+      // For recurring frequencies, generate only ONE task with the End Date
       // The recurrence logic will be handled by your backend/system
       const taskDateTimeStr = formatDateTimeForStorage(date, time);
 
@@ -551,7 +551,7 @@ const getLastTaskId = async (sheetName) => {
         department: formData.department,
         givenBy: formData.givenBy,
         doer: formData.doer,
-        dueDate: taskDateTimeStr, // This becomes the start date for recurrence
+        dueDate: taskDateTimeStr, // This becomes the End Date for recurrence
         status: "pending",
         frequency: formData.frequency,
         enableReminders: formData.enableReminders,
@@ -961,7 +961,7 @@ const handleSubmit = async (e) => {
                 {/* Date Picker */}
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-purple-700">
-                    Task Start Date
+                    Task End Date
                   </label>
                   <div className="relative">
                     <button

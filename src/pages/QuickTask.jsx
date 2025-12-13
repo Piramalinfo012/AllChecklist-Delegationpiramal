@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback,useRef  } from "react";
 import { format } from 'date-fns';
 import { Search, ChevronDown, Filter } from "lucide-react";
 import AdminLayout from "../components/layout/AdminLayout";
@@ -27,6 +27,24 @@ export default function QuickTask() {
 const [editingRows, setEditingRows] = useState(new Set());
 const [editedData, setEditedData] = useState({});
 const [submitting, setSubmitting] = useState(false);
+const dropdownRef = useRef(null);
+
+
+useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      setDropdownOpen({ name: false, frequency: false });
+    }
+  };
+
+  document.addEventListener('mousedown', handleClickOutside);
+  return () => {
+    document.removeEventListener('mousedown', handleClickOutside);
+  };
+}, []);
+
+// Dropdown toggle functions
+
 
 
 const formatTimestampForSheet = () => {
@@ -196,8 +214,8 @@ const submitSelectedTasks = async () => {
       
       // Log the original and formatted date for debugging
       console.log("Date processing:", {
-        original: editedTask['Start Date'],
-        formatted: formatDateForSheet(editedTask['Start Date'])
+        original: editedTask['End Date'],
+        formatted: formatDateForSheet(editedTask['End Date'])
       });
       
       return {
@@ -207,7 +225,7 @@ const submitSelectedTasks = async () => {
         givenBy: editedTask['Given By'] || "",
         name: editedTask.Name || "",
         description: editedTask['Task Description'] || "",
-        startDate: formatDateForSheet(editedTask['Start Date']), // Use the improved function
+        startDate: formatDateForSheet(editedTask['End Date']), // Use the improved function
         freq: editedTask.Frequency || "",
         enableReminders: editedTask.Reminders || "",
         requireAttachment: editedTask.Attachment || ""
@@ -357,7 +375,7 @@ const fetchChecklistData = useCallback(async () => {
 
       // Map columns according to your specification (B-J from Checklist sheet)
       const transformedData = rows.map((row, rowIndex) => {
-        // Handle Start Date field - convert from Google Sheets format if needed
+        // Handle End Date field - convert from Google Sheets format if needed
         let startDateValue = row.c[6]?.v || "";
         if (typeof startDateValue === 'string' && startDateValue.startsWith('Date(')) {
           startDateValue = formatDateForSheet(startDateValue);
@@ -371,7 +389,7 @@ const fetchChecklistData = useCallback(async () => {
           'Given By': row.c[3]?.v || "",
           Name: row.c[4]?.v || "",
           'Task Description': row.c[5]?.v || "",
-          'Start Date': startDateValue, // Use processed date
+          'End Date': startDateValue, // Use processed date
           Frequency: row.c[7]?.v || "",
           Reminders: row.c[8]?.v || "",
           Attachment: row.c[9]?.v || "",
@@ -447,7 +465,7 @@ const fetchChecklistData = useCallback(async () => {
             'Given By': row.c[3]?.v || "",
             Name: row.c[4]?.v || "",
             'Task Description': row.c[5]?.v || "",
-            'Task Start Date': formatDate(row.c[6]?.v),
+            'Task End Date': formatDate(row.c[6]?.v),
             Freq: row.c[7]?.v || "",
             'Enable Reminders': row.c[8]?.v || "",
             'Require Attachment': row.c[9]?.v || "",
@@ -715,71 +733,73 @@ const fetchChecklistData = useCallback(async () => {
               />
             </div>
 
-            <div className="flex gap-2">
-              <div className="relative">
-                <button
-                  onClick={() => toggleDropdown('name')}
-                  className="flex items-center gap-2 px-3 py-2 border border-purple-200 rounded-md bg-white text-sm text-gray-700 hover:bg-gray-50"
-                >
-                  <Filter className="h-4 w-4" />
-                  {nameFilter || 'Filter by Name'}
-                  <ChevronDown size={16} className={`transition-transform ${dropdownOpen.name ? 'rotate-180' : ''}`} />
-                </button>
-                {dropdownOpen.name && (
-                  <div className="absolute z-50 mt-1 w-56 rounded-md bg-white shadow-lg border border-gray-200 max-h-60 overflow-auto">
-                    <div className="py-1">
-                      <button
-                        onClick={clearNameFilter}
-                        className={`block w-full text-left px-4 py-2 text-sm ${!nameFilter ? 'bg-purple-100 text-purple-900' : 'text-gray-700 hover:bg-gray-100'}`}
-                      >
-                        All Names
-                      </button>
-                      {currentNames.map(name => (
-                        <button
-                          key={name}
-                          onClick={() => handleNameFilterSelect(name)}
-                          className={`block w-full text-left px-4 py-2 text-sm ${nameFilter === name ? 'bg-purple-100 text-purple-900' : 'text-gray-700 hover:bg-gray-100'}`}
-                        >
-                          {name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+            <div className="flex gap-2" ref={dropdownRef}>
+  {/* Name Filter Dropdown */}
+  <div className="relative">
+    <button
+      onClick={() => toggleDropdown('name')}
+      className="flex items-center gap-2 px-3 py-2 border border-purple-200 rounded-md bg-white text-sm text-gray-700 hover:bg-gray-50"
+    >
+      <Filter className="h-4 w-4" />
+      {nameFilter || 'Filter by Name'}
+      <ChevronDown size={16} className={`transition-transform ${dropdownOpen.name ? 'rotate-180' : ''}`} />
+    </button>
+    {dropdownOpen.name && (
+      <div className="absolute z-50 mt-1 w-56 rounded-md bg-white shadow-lg border border-gray-200 max-h-60 overflow-auto">
+        <div className="py-1">
+          <button
+            onClick={clearNameFilter}
+            className={`block w-full text-left px-4 py-2 text-sm ${!nameFilter ? 'bg-purple-100 text-purple-900' : 'text-gray-700 hover:bg-gray-100'}`}
+          >
+            All Names
+          </button>
+          {currentNames.map(name => (
+            <button
+              key={name}
+              onClick={() => handleNameFilterSelect(name)}
+              className={`block w-full text-left px-4 py-2 text-sm ${nameFilter === name ? 'bg-purple-100 text-purple-900' : 'text-gray-700 hover:bg-gray-100'}`}
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
 
-              <div className="relative">
-                <button
-                  onClick={() => toggleDropdown('frequency')}
-                  className="flex items-center gap-2 px-3 py-2 border border-purple-200 rounded-md bg-white text-sm text-gray-700 hover:bg-gray-50"
-                >
-                  <Filter className="h-4 w-4" />
-                  {freqFilter || 'Filter by Frequency'}
-                  <ChevronDown size={16} className={`transition-transform ${dropdownOpen.frequency ? 'rotate-180' : ''}`} />
-                </button>
-                {dropdownOpen.frequency && (
-                  <div className="absolute z-50 mt-1 w-56 rounded-md bg-white shadow-lg border border-gray-200 max-h-60 overflow-auto">
-                    <div className="py-1">
-                      <button
-                        onClick={clearFrequencyFilter}
-                        className={`block w-full text-left px-4 py-2 text-sm ${!freqFilter ? 'bg-purple-100 text-purple-900' : 'text-gray-700 hover:bg-gray-100'}`}
-                      >
-                        All Frequencies
-                      </button>
-                      {currentFrequencies.map(freq => (
-                        <button
-                          key={freq}
-                          onClick={() => handleFrequencyFilterSelect(freq)}
-                          className={`block w-full text-left px-4 py-2 text-sm ${freqFilter === freq ? 'bg-purple-100 text-purple-900' : 'text-gray-700 hover:bg-gray-100'}`}
-                        >
-                          {freq}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+  {/* Frequency Filter Dropdown */}
+  <div className="relative">
+    <button
+      onClick={() => toggleDropdown('frequency')}
+      className="flex items-center gap-2 px-3 py-2 border border-purple-200 rounded-md bg-white text-sm text-gray-700 hover:bg-gray-50"
+    >
+      <Filter className="h-4 w-4" />
+      {freqFilter || 'Filter by Frequency'}
+      <ChevronDown size={16} className={`transition-transform ${dropdownOpen.frequency ? 'rotate-180' : ''}`} />
+    </button>
+    {dropdownOpen.frequency && (
+      <div className="absolute z-50 mt-1 w-56 rounded-md bg-white shadow-lg border border-gray-200 max-h-60 overflow-auto">
+        <div className="py-1">
+          <button
+            onClick={clearFrequencyFilter}
+            className={`block w-full text-left px-4 py-2 text-sm ${!freqFilter ? 'bg-purple-100 text-purple-900' : 'text-gray-700 hover:bg-gray-100'}`}
+          >
+            All Frequencies
+          </button>
+          {currentFrequencies.map(freq => (
+            <button
+              key={freq}
+              onClick={() => handleFrequencyFilterSelect(freq)}
+              className={`block w-full text-left px-4 py-2 text-sm ${freqFilter === freq ? 'bg-purple-100 text-purple-900' : 'text-gray-700 hover:bg-gray-100'}`}
+            >
+              {freq}
+            </button>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+</div>
           </div>
         </div>
       </div>
@@ -840,7 +860,7 @@ const fetchChecklistData = useCallback(async () => {
               { key: 'Given By', label: 'Given By' },
               { key: 'Name', label: 'Name' },
               { key: 'Task Description', label: 'Task Description', minWidth: 'min-w-[300px]' },
-              { key: 'Start Date', label: 'Start Date', bg: 'bg-yellow-50' },
+              { key: 'End Date', label: 'End Date', bg: 'bg-yellow-50' },
               { key: 'Frequency', label: 'Frequency' },
               { key: 'Reminders', label: 'Reminders' },
               { key: 'Attachment', label: 'Attachment' },
@@ -948,32 +968,32 @@ const fetchChecklistData = useCallback(async () => {
     <div className="flex gap-2 items-center">
       <input
         type="date"
-        value={editedTask['Start Date'] ? editedTask['Start Date'].split(' ')[0].split('/').reverse().join('-') : ''}
+        value={editedTask['End Date'] ? editedTask['End Date'].split(' ')[0].split('/').reverse().join('-') : ''}
         onChange={(e) => {
           if (e.target.value) {
             const [year, month, day] = e.target.value.split('-');
-            handleInputChange(task._id, 'Start Date', `${day}/${month}/${year} 00:00:00`);
+            handleInputChange(task._id, 'End Date', `${day}/${month}/${year} 00:00:00`);
           } else {
-            handleInputChange(task._id, 'Start Date', '');
+            handleInputChange(task._id, 'End Date', '');
           }
         }}
         className="px-2 py-1 border border-gray-300 rounded text-sm"
       />
       <input
         type="time"
-        value={editedTask['Start Date'] ? editedTask['Start Date'].split(' ')[1] || '00:00' : '00:00'}
+        value={editedTask['End Date'] ? editedTask['End Date'].split(' ')[1] || '00:00' : '00:00'}
         onChange={(e) => {
-          const dateStr = editedTask['Start Date']?.split(' ')[0] || '';
+          const dateStr = editedTask['End Date']?.split(' ')[0] || '';
           if (dateStr) {
             const [hours, minutes] = e.target.value.split(':');
-            handleInputChange(task._id, 'Start Date', `${dateStr} ${hours}:${minutes}:00`);
+            handleInputChange(task._id, 'End Date', `${dateStr} ${hours}:${minutes}:00`);
           }
         }}
         className="px-2 py-1 border border-gray-300 rounded text-sm"
       />
     </div>
   ) : (
-    formatDate(task['Start Date']) || "—"
+    formatDate(task['End Date']) || "—"
   )}
 </td>
 
@@ -1157,30 +1177,30 @@ const fetchChecklistData = useCallback(async () => {
                     )}
                   </div>
                   <div className="flex justify-between items-center border-b pb-2">
-  <span className="font-medium text-gray-700">Start Date:</span>
+  <span className="font-medium text-gray-700">End Date:</span>
   {isEditing ? (
     <div className="flex gap-1 items-center w-[35%]">
       <input
         type="date"
-        value={editedTask['Start Date'] ? editedTask['Start Date'].split(' ')[0].split('/').reverse().join('-') : ''}
+        value={editedTask['End Date'] ? editedTask['End Date'].split(' ')[0].split('/').reverse().join('-') : ''}
         onChange={(e) => {
           if (e.target.value) {
             const [year, month, day] = e.target.value.split('-');
-            handleInputChange(task._id, 'Start Date', `${day}/${month}/${year} 00:00:00`);
+            handleInputChange(task._id, 'End Date', `${day}/${month}/${year} 00:00:00`);
           } else {
-            handleInputChange(task._id, 'Start Date', '');
+            handleInputChange(task._id, 'End Date', '');
           }
         }}
         className="px-2 py-1 border border-gray-300 rounded text-sm"
       />
       <input
         type="time"
-        value={editedTask['Start Date'] ? editedTask['Start Date'].split(' ')[1] || '00:00' : '00:00'}
+        value={editedTask['End Date'] ? editedTask['End Date'].split(' ')[1] || '00:00' : '00:00'}
         onChange={(e) => {
-          const dateStr = editedTask['Start Date']?.split(' ')[0] || '';
+          const dateStr = editedTask['End Date']?.split(' ')[0] || '';
           if (dateStr) {
             const [hours, minutes] = e.target.value.split(':');
-            handleInputChange(task._id, 'Start Date', `${dateStr} ${hours}:${minutes}:00`);
+            handleInputChange(task._id, 'End Date', `${dateStr} ${hours}:${minutes}:00`);
           }
         }}
         className="px-2 py-1 border border-gray-300 rounded text-sm"
@@ -1188,7 +1208,7 @@ const fetchChecklistData = useCallback(async () => {
     </div>
   ) : (
     <div className="text-sm text-gray-900 break-words bg-yellow-50 px-2 py-1 rounded text-right w-[35%]">
-      {formatDate(task['Start Date']) || "—"}
+      {formatDate(task['End Date']) || "—"}
     </div>
   )}
 </div>

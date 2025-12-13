@@ -73,7 +73,7 @@ export default function DelegationPage({
             "Given By": row.c[3]?.v || "",
             Name: row.c[4]?.v || "",
             "Task Description": row.c[5]?.v || "",
-            "Task Start Date": formatDate(row.c[6]?.v),
+            "Task End Date": formatDate(row.c[6]?.v),
             Freq: row.c[7]?.v || "",
             "Enable Reminders": row.c[8]?.v || "",
             "Require Attachment": row.c[9]?.v || "",
@@ -204,7 +204,7 @@ export default function DelegationPage({
         label: "Task Description",
         minWidth: "min-w-[300px]",
       },
-      { key: "Task Start Date", label: "Start Date", bg: "bg-yellow-50" },
+      { key: "Task End Date", label: "End Date", bg: "bg-yellow-50" },
       { key: "Freq", label: "Frequency" },
       { key: "Enable Reminders", label: "Reminders" },
       { key: "Require Attachment", label: "Attachment" },
@@ -314,7 +314,7 @@ export default function DelegationPage({
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 bg-yellow-50">
-                    {task["Task Start Date"] || "—"}
+                    {task["Task End Date"] || "—"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <span
@@ -426,11 +426,11 @@ export default function DelegationPage({
                   </div>
                 </div>
 
-                {/* Task Start Date */}
+                {/* Task End Date */}
                 <div className="flex justify-between items-center border-b pb-2">
-                  <span className="font-medium text-gray-700">Start Date:</span>
+                  <span className="font-medium text-gray-700">End Date:</span>
                   <div className="text-sm text-gray-500 break-words bg-yellow-50 px-2 py-1 rounded">
-                    {task["Task Start Date"] || "—"}
+                    {task["Task End Date"] || "—"}
                   </div>
                 </div>
 

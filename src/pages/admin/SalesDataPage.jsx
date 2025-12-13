@@ -842,7 +842,7 @@ function AccountDataPage() {
 
         if (!isUserMatch && currentUserRole !== "admin") return;
 
-        const columnGValue = rowValues[6]; // Task Start Date
+        const columnGValue = rowValues[6]; // Task End Date
         const columnKValue = rowValues[10]; // Actual Date
         const columnMValue = rowValues[12]; // Status (DONE)
         const columnPValue = rowValues[15]; // Admin Processed Date (Column P)
@@ -877,7 +877,7 @@ function AccountDataPage() {
           { id: "col3", label: "Given By", type: "string" },
           { id: "col4", label: "Name", type: "string" },
           { id: "col5", label: "Task Description", type: "string" },
-          { id: "col6", label: "Task Start Date", type: "datetime" },
+          { id: "col6", label: "Task End Date", type: "datetime" },
           { id: "col7", label: "Freq", type: "string" },
           { id: "col8", label: "Enable Reminders", type: "string" },
           { id: "col9", label: "Require Attachment", type: "string" },
@@ -1592,7 +1592,7 @@ function AccountDataPage() {
                         Task Description
                       </th>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-yellow-50 min-w-[140px]">
-                        Task Start Date & Time
+                        Task End Date & Time
                       </th>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px]">
                         Freq
@@ -1961,7 +1961,7 @@ function AccountDataPage() {
                             (userRole !== "admin" && isAdmin ? 1 : 0) + // Department Name column
                             (userRole !== "admin" && isAdmin ? 1 : 0) + // Given By column
                             (userRole !== "admin" && isAdmin ? 1 : 0) + // Name column
-                            7 + // Fixed columns (Task Description, Task Start Date, Freq, Require Attachment, Actual Date, Status, Remarks, Attachment)
+                            7 + // Fixed columns (Task Description, Task End Date, Freq, Require Attachment, Actual Date, Status, Remarks, Attachment)
                             (userRole !== "admin" && isAdmin ? 1 : 0) // Enable Reminders column
                           }
                           className="px-6 py-4 text-center text-gray-500"
@@ -2019,7 +2019,7 @@ function AccountDataPage() {
                         Task Description
                       </th>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-yellow-50 min-w-[140px]">
-                        Task Start Date & Time
+                        Task End Date & Time
                       </th>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px]">
                         Freq
@@ -2223,7 +2223,7 @@ function AccountDataPage() {
                       id={`upload-${account._id}`}
                       type="file"
                       accept="image/*"
-                      capture="environment"
+                      // capture="environment"
                       className="hidden"
                       onChange={(e) => handleImageUpload(account._id, e)}
                       disabled={!isSelected}
@@ -2347,10 +2347,10 @@ function AccountDataPage() {
                             </div>
                           </div>
 
-                          {/* Task Start Date */}
+                          {/* Task End Date */}
                           <div className="flex justify-between items-center border-b pb-2">
                             <span className="font-medium text-gray-700">
-                              Start Date:
+                              End Date:
                             </span>
                             <div className="text-sm text-gray-900 break-words text-right">
                               {account["col6"] ? (
@@ -2498,7 +2498,7 @@ function AccountDataPage() {
                       id={`upload-${account._id}`}
                       type="file"
                       accept="image/*"
-                      capture="environment"
+                      // capture="environment"
                       className="hidden"
                       onChange={(e) => handleImageUpload(account._id, e)}
                       disabled={!isSelected}

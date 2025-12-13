@@ -404,7 +404,7 @@ function AccountDataPage() {
                 const isUserMatch = currentUserRole === "admin" || assignedTo.toLowerCase() === currentUsername.toLowerCase()
                 if (!isUserMatch && currentUserRole !== "admin") return
 
-                const columnGValue = rowValues[6] // Task Start Date
+                const columnGValue = rowValues[6] // Task End Date
                 const columnKValue = rowValues[10] // Actual Date
                 const columnMValue = rowValues[12] // Status (DONE)
                 const columnPValue = rowValues[15] // Admin Processed Date (Column P)
@@ -437,7 +437,7 @@ function AccountDataPage() {
                     { id: "col3", label: "Given By", type: "string" },
                     { id: "col4", label: "Name", type: "string" },
                     { id: "col5", label: "Task Description", type: "string" },
-                    { id: "col6", label: "Task Start Date", type: "datetime" },
+                    { id: "col6", label: "Task End Date", type: "datetime" },
                     { id: "col7", label: "Freq", type: "string" },
                     { id: "col8", label: "Enable Reminders", type: "string" },
                     { id: "col9", label: "Require Attachment", type: "string" },
@@ -966,7 +966,7 @@ function AccountDataPage() {
                                                 Task Description
                                             </th>
                                             <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-yellow-50 min-w-[140px]">
-                                                Task Start Date & Time
+                                                Task End Date & Time
                                             </th>
                                             <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px]">
                                                 Freq
@@ -1209,7 +1209,7 @@ function AccountDataPage() {
                                             Task Description
                                         </th>
                                         <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-yellow-50 min-w-[140px]">
-                                            Task Start Date & Time
+                                            Task End Date & Time
                                         </th>
                                         <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px]">
                                             Freq
