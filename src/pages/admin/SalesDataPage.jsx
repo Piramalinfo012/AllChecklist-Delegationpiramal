@@ -19,9 +19,9 @@ import AdminLayout from "../../components/layout/AdminLayout";
 const CONFIG = {
   // Google Apps Script URL
   APPS_SCRIPT_URL:
-    "https://script.google.com/macros/s/AKfycbwzIe3w7c6Mnc0UzueJaD89mwxyNPINmBr23DADlfhqC9uyt8Lg8j-S_Wltza0hM3pP/exec",
+    "https://script.google.com/macros/s/AKfycbwcmMvtW0SIzCnaVf_b5Z2-RXc6Ujo9i0uJAfwLilw7s3I9CIgBpE8RENgy8abKV08G/exec",
   // Google Drive folder ID for file uploads
-  DRIVE_FOLDER_ID: "1rH-S4WWjE8Id2I66Jw6_pDh6IvJbXVuU",
+  DRIVE_FOLDER_ID: "1mocSXHZWgUBRpRCpOS_-1L-f0CcVJcl_",
   // Sheet name to work with
   SHEET_NAME: "Checklist",
   // Page configuration
@@ -2112,16 +2112,56 @@ const handleCameraCapture = useCallback((id, file) => {
                               isSelected ? "bg-purple-50" : ""
                             } hover:bg-gray-50`}
                           >
-                            <td className="px-3 py-4 w-12">
-                              <input
-                                type="checkbox"
-                                className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                                checked={isSelected}
-                                onChange={(e) =>
-                                  handleCheckboxClick(e, account._id)
-                                }
-                              />
-                            </td>
+                           <td className="px-3 py-4 w-12 relative">
+  {/* Status Label - Fixed positioning */}
+  <div className="absolute -top-2 -left-1 right-0 mx-auto z-10 whitespace-nowrap text-xs font-bold px-2 py-1 rounded-md shadow-md w-fit">
+    {(() => {
+      const dateStr = account["col6"] || "";
+      if (!dateStr) return null;
+      
+      const datePart = dateStr.split(" ")[0];
+      const parsedDate = parseDateFromDDMMYYYY(datePart);
+      if (!parsedDate) return null;
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const taskDate = new Date(parsedDate);
+      taskDate.setHours(0, 0, 0, 0);
+      
+      const timeDiff = taskDate.getTime() - today.getTime();
+      const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+      
+      if (dayDiff === 0) {
+        return (
+          <div className="bg-amber-500 text-white text-center px-2 min-w-[65px]">
+            TODAY
+          </div>
+        );
+      } else if (dayDiff < 0) {
+        return (
+          <div className="bg-red-600 text-white text-center px-2 min-w-[65px]">
+            OVERDUE
+          </div>
+        );
+      } else if (dayDiff > 0) {
+        return (
+          <div className="bg-blue-500 text-white text-center px-2 min-w-[65px]">
+            UPCOMING
+          </div>
+        );
+      }
+      return null;
+    })()}
+  </div>
+  
+  <input
+    type="checkbox"
+    className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+    checked={isSelected}
+    onChange={(e) => handleCheckboxClick(e, account._id)}
+  />
+</td>
                             <td className="px-3 py-4 min-w-[100px]">
                               <div className="text-sm text-gray-900 break-words">
                                 {account["col1"] || "—"}

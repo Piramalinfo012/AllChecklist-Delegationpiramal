@@ -35,7 +35,7 @@ export default function AdminDashboard() {
 
   // Apps Script URL - UPDATE THIS WITH YOUR DEPLOYED APPS SCRIPT URL
   const APPS_SCRIPT_URL =
-    "https://script.google.com/macros/s/AKfycbwzIe3w7c6Mnc0UzueJaD89mwxyNPINmBr23DADlfhqC9uyt8Lg8j-S_Wltza0hM3pP/exec"
+    "https://script.google.com/macros/s/AKfycbwcmMvtW0SIzCnaVf_b5Z2-RXc6Ujo9i0uJAfwLilw7s3I9CIgBpE8RENgy8abKV08G/exec"
 
   // State for department data
   const [departmentData, setDepartmentData] = useState({
@@ -299,7 +299,7 @@ export default function AdminDashboard() {
 
       // Fallback to gviz only if Apps Script completely fails
       const response = await fetch(
-        `https://script.google.com/macros/s/AKfycbwzIe3w7c6Mnc0UzueJaD89mwxyNPINmBr23DADlfhqC9uyt8Lg8j-S_Wltza0hM3pP/exec/gviz/tq?tqx=out:json&sheet=MASTER`
+        `https://script.google.com/macros/s/AKfycbwcmMvtW0SIzCnaVf_b5Z2-RXc6Ujo9i0uJAfwLilw7s3I9CIgBpE8RENgy8abKV08G/exec/gviz/tq?tqx=out:json&sheet=MASTER`
       );
 
       if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);

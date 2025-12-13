@@ -380,7 +380,7 @@ const fetchDepartmentData = async () => {
 
     // FIXED: Use the correct Google Apps Script endpoint
     // Remove '/gviz/tq' from the URL and use the base exec endpoint
-    const scriptUrl = 'https://script.google.com/macros/s/AKfycbwzIe3w7c6Mnc0UzueJaD89mwxyNPINmBr23DADlfhqC9uyt8Lg8j-S_Wltza0hM3pP/exec';
+    const scriptUrl = 'https://script.google.com/macros/s/AKfycbwcmMvtW0SIzCnaVf_b5Z2-RXc6Ujo9i0uJAfwLilw7s3I9CIgBpE8RENgy8abKV08G/exec';
     
     const response = await fetch(`${scriptUrl}?sheet=${sheetName}`, {
       method: 'GET',
