@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { BarChart3, CheckCircle2, Clock, ListTodo, Users, AlertTriangle, Filter,X ,Search} from 'lucide-react'
+import { BarChart3, CheckCircle2, Clock, ListTodo, Users, AlertTriangle, Filter, X, Search } from 'lucide-react'
 import AdminLayout from "../../components/layout/AdminLayout.jsx"
 import {
   BarChart,
@@ -26,6 +26,8 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
   const [filterDepartment, setFilterDepartment] = useState("all");
   const [filterName, setFilterName] = useState("all");
+  const [userRole, setUserRole] = useState(sessionStorage.getItem("role") || "user");
+  const [username, setUsername] = useState(sessionStorage.getItem("username") || "");
 
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupData, setPopupData] = useState([]);
@@ -371,263 +373,216 @@ export default function AdminDashboard() {
     return dateStr
   }
 
- // Modified fetch function to support both checklist and delegation
-const fetchDepartmentData = async () => {
-  const sheetName = dashboardType === "delegation" ? "DELEGATION" : "Checklist";
+  // Modified fetch function to support both checklist and delegation
+  const fetchDepartmentData = async () => {
+    const sheetName = dashboardType === "delegation" ? "DELEGATION" : "Checklist";
 
-  try {
-    console.log(`Fetching data for dashboard type: ${dashboardType}, sheet: ${sheetName}`);
-
-    // FIXED: Use the correct Google Apps Script endpoint
-    // Remove '/gviz/tq' from the URL and use the base exec endpoint
-    const scriptUrl = 'https://script.google.com/macros/s/AKfycbwcmMvtW0SIzCnaVf_b5Z2-RXc6Ujo9i0uJAfwLilw7s3I9CIgBpE8RENgy8abKV08G/exec';
-    
-    const response = await fetch(`${scriptUrl}?sheet=${sheetName}`, {
-      method: 'GET',
-      redirect: 'follow', // Follow redirects automatically
-    });
-
-    console.log("Response status:", response.status);
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch ${sheetName} sheet data: ${response.status}`);
-    }
-
-    const text = await response.text();
-    console.log("Response text:", text.substring(0, 200)); // Log first 200 chars
-    
-    // Try to parse JSON directly first
-    let data;
     try {
-      data = JSON.parse(text);
-    } catch (e) {
-      // If direct parse fails, try extracting JSON from JSONP response
-      const jsonStart = text.indexOf('{');
-      const jsonEnd = text.lastIndexOf('}');
-      
-      if (jsonStart === -1 || jsonEnd === -1) {
-        throw new Error('Invalid response format: No JSON found');
-      }
-      
-      const jsonString = text.substring(jsonStart, jsonEnd + 1);
-      data = JSON.parse(jsonString);
-    }
+      console.log(`Fetching data for dashboard type: ${dashboardType}, sheet: ${sheetName}`);
 
-    // Validate data structure
-    if (!data || !data.table || !data.table.rows) {
-      throw new Error('Invalid data structure received from Google Sheets');
-    }
+      // FIXED: Use the correct Google Apps Script endpoint
+      // Remove '/gviz/tq' from the URL and use the base exec endpoint
+      const scriptUrl = 'https://script.google.com/macros/s/AKfycbwcmMvtW0SIzCnaVf_b5Z2-RXc6Ujo9i0uJAfwLilw7s3I9CIgBpE8RENgy8abKV08G/exec';
 
-    console.log("Data parsed successfully, rows:", data.table.rows.length);
+      const response = await fetch(`${scriptUrl}?sheet=${sheetName}`, {
+        method: 'GET',
+        redirect: 'follow', // Follow redirects automatically
+      });
 
-    // Get current user details
-    const username = sessionStorage.getItem('username');
-    const userRole = sessionStorage.getItem('role');
+      console.log("Response status:", response.status);
 
-    // Initialize counters
-    let totalTasks = 0;
-    let completedTasks = 0;
-    let pendingTasks = 0;
-    let overdueTasks = 0;
-
-    // Add new counters for delegation mode
-    let completedRatingOne = 0;
-    let completedRatingTwo = 0;
-    let completedRatingThreePlus = 0;
-
-    // Monthly data for bar chart
-    const monthlyData = {
-      Jan: { completed: 0, pending: 0 },
-      Feb: { completed: 0, pending: 0 },
-      Mar: { completed: 0, pending: 0 },
-      Apr: { completed: 0, pending: 0 },
-      May: { completed: 0, pending: 0 },
-      Jun: { completed: 0, pending: 0 },
-      Jul: { completed: 0, pending: 0 },
-      Aug: { completed: 0, pending: 0 },
-      Sep: { completed: 0, pending: 0 },
-      Oct: { completed: 0, pending: 0 },
-      Nov: { completed: 0, pending: 0 },
-      Dec: { completed: 0, pending: 0 }
-    };
-
-    // Status data for pie chart
-    const statusData = {
-      Completed: 0,
-      Pending: 0,
-      Overdue: 0
-    };
-
-    // Staff tracking map
-    const staffTrackingMap = new Map();
-
-    // Get today's date for comparison
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // Get tomorrow's date for comparison
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
-
-    // Process row data
-    const processedRows = data.table.rows.map((row, rowIndex) => {
-      // Skip header row
-      if (rowIndex === 0) return null;
-
-      // For non-admin users, filter by username in Column E (index 4) - "Name"
-      const assignedTo = getCellValue(row, 4) || 'Unassigned';
-      const isUserMatch = userRole === 'admin' ||
-        assignedTo.toLowerCase() === username.toLowerCase();
-
-      // If not a match and not admin, skip this row
-      if (!isUserMatch) {
-        return null;
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ${sheetName} sheet data: ${response.status}`);
       }
 
-      // Check column B for valid task row - "Task ID"
-      const taskId = getCellValue(row, 1); // Column B (index 1)
+      const text = await response.text();
+      console.log("Response text:", text.substring(0, 200)); // Log first 200 chars
 
-      // FIXED: Removed console.log("ram", ram) - this was causing errors
-      
-      // More lenient validation - allow any non-empty value as task ID
-      if (taskId === null || taskId === undefined || taskId === '' ||
-        (typeof taskId === 'string' && taskId.trim() === '')) {
-        return null;
+      // Try to parse JSON directly first
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        // If direct parse fails, try extracting JSON from JSONP response
+        const jsonStart = text.indexOf('{');
+        const jsonEnd = text.lastIndexOf('}');
+
+        if (jsonStart === -1 || jsonEnd === -1) {
+          throw new Error('Invalid response format: No JSON found');
+        }
+
+        const jsonString = text.substring(jsonStart, jsonEnd + 1);
+        data = JSON.parse(jsonString);
       }
 
-      // Convert task ID to string for consistency
-      const taskIdStr = String(taskId).trim();
+      // Validate data structure
+      if (!data || !data.table || !data.table.rows) {
+        throw new Error('Invalid data structure received from Google Sheets');
+      }
 
-      // Get Task End Date from Column G (index 6) - "Task End Date"
-      let taskStartDateValue = getCellValue(row, 6);
-      const taskStartDate = taskStartDateValue ? parseGoogleSheetsDate(String(taskStartDateValue)) : '';
+      console.log("Data parsed successfully, rows:", data.table.rows.length);
 
-      // UPDATED: Different date filtering logic for delegation vs checklist
-      if (dashboardType === "delegation") {
-        // FIXED: Removed console.log("ram", ram)
-        // For DELEGATION mode: Process ALL tasks with valid task IDs, no date filtering
-        if (!taskId || taskId === null || taskId === undefined || taskId === '' ||
+      // Get current user details
+      const username = sessionStorage.getItem('username');
+      const userRole = sessionStorage.getItem('role');
+
+      // Initialize counters
+      let totalTasks = 0;
+      let completedTasks = 0;
+      let pendingTasks = 0;
+      let overdueTasks = 0;
+
+      // Add new counters for delegation mode
+      let completedRatingOne = 0;
+      let completedRatingTwo = 0;
+      let completedRatingThreePlus = 0;
+
+      // Monthly data for bar chart
+      const monthlyData = {
+        Jan: { completed: 0, pending: 0 },
+        Feb: { completed: 0, pending: 0 },
+        Mar: { completed: 0, pending: 0 },
+        Apr: { completed: 0, pending: 0 },
+        May: { completed: 0, pending: 0 },
+        Jun: { completed: 0, pending: 0 },
+        Jul: { completed: 0, pending: 0 },
+        Aug: { completed: 0, pending: 0 },
+        Sep: { completed: 0, pending: 0 },
+        Oct: { completed: 0, pending: 0 },
+        Nov: { completed: 0, pending: 0 },
+        Dec: { completed: 0, pending: 0 }
+      };
+
+      // Status data for pie chart
+      const statusData = {
+        Completed: 0,
+        Pending: 0,
+        Overdue: 0
+      };
+
+      // Staff tracking map
+      const staffTrackingMap = new Map();
+
+      // Get today's date for comparison
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Get tomorrow's date for comparison
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+
+      // Process row data
+      const processedRows = data.table.rows.map((row, rowIndex) => {
+        // Skip header row
+        if (rowIndex === 0) return null;
+
+        // For non-admin users, filter by username in Column E (index 4) - "Name"
+        const assignedTo = getCellValue(row, 4) || 'Unassigned';
+        const isUserMatch = userRole === 'admin' ||
+          assignedTo.toLowerCase() === username.toLowerCase();
+
+        // If not a match and not admin, skip this row
+        if (!isUserMatch) {
+          return null;
+        }
+
+        // Check column B for valid task row - "Task ID"
+        const taskId = getCellValue(row, 1); // Column B (index 1)
+
+        // FIXED: Removed console.log("ram", ram) - this was causing errors
+
+        // More lenient validation - allow any non-empty value as task ID
+        if (taskId === null || taskId === undefined || taskId === '' ||
           (typeof taskId === 'string' && taskId.trim() === '')) {
           return null;
         }
-      } else {
-        // FIXED: Removed console.log("ram", ram)
-        // For CHECKLIST mode: Keep existing date filtering logic
-        const taskStartDateObj = parseDateFromDDMMYYYY(taskStartDate);
 
-        // Process tasks that have a valid End Date and are due up to tomorrow
-        if (!taskStartDateObj || taskStartDateObj > tomorrow) {
-          return null; // Skip tasks beyond tomorrow
-        }
-      }
+        // Convert task ID to string for consistency
+        const taskIdStr = String(taskId).trim();
 
-      // Get completion data based on dashboard type
-      let completionDateValue, completionDate;
-      if (dashboardType === "delegation") {
-        // For delegation: Column L (index 11) - "Actual"
-        completionDateValue = getCellValue(row, 11);
-      } else {
-        // For checklist: Column K (index 10) - "Actual"
-        completionDateValue = getCellValue(row, 10);
-      }
+        // Get Task End Date from Column G (index 6) - "Task End Date"
+        let taskStartDateValue = getCellValue(row, 6);
+        const taskStartDate = taskStartDateValue ? parseGoogleSheetsDate(String(taskStartDateValue)) : '';
 
-      completionDate = completionDateValue ? parseGoogleSheetsDate(String(completionDateValue)) : '';
-
-      // Track staff details
-      if (!staffTrackingMap.has(assignedTo)) {
-        staffTrackingMap.set(assignedTo, {
-          name: assignedTo,
-          totalTasks: 0,
-          completedTasks: 0,
-          pendingTasks: 0,
-          progress: 0
-        });
-      }
-
-      // Get additional task details
-      const taskDescription = getCellValue(row, 5) || 'Untitled Task'; // Column F
-      const frequency = getCellValue(row, 7) || 'one-time'; // Column H
-
-      // Determine task status
-      let status = 'pending';
-
-      if (completionDate && completionDate !== '') {
-        status = 'completed';
-      } else if (isDateInPast(taskStartDate) && !isDateToday(taskStartDate)) {
-        status = 'overdue';
-      } else {
-        status = 'pending';
-      }
-
-      const department = getCellValue(row, 2) || "";
-      
-      // Create the task object
-      const taskObj = {
-        id: taskIdStr,
-        title: taskDescription,
-        assignedTo,
-        department,
-        taskStartDate,
-        dueDate: taskStartDate,
-        status,
-        frequency
-      };
-
-      // Update staff member totals
-      const staffData = staffTrackingMap.get(assignedTo);
-      staffData.totalTasks++;
-
-      // Count for dashboard cards
-      if (dashboardType === "delegation") {
-        // For DELEGATION mode: Count ALL valid tasks
-        totalTasks++;
-
-        if (status === 'completed') {
-          completedTasks++;
-          staffData.completedTasks++;
-          statusData.Completed++;
-
-          // Count by rating
-          const ratingValue = getCellValue(row, 17);
-          if (ratingValue === 1) {
-            completedRatingOne++;
-          } else if (ratingValue === 2) {
-            completedRatingTwo++;
-          } else if (ratingValue > 2) {
-            completedRatingThreePlus++;
-          }
-
-          // Update monthly data
-          const completedMonth = parseDateFromDDMMYYYY(completionDate);
-          if (completedMonth) {
-            const monthName = completedMonth.toLocaleString('default', { month: 'short' });
-            if (monthlyData[monthName]) {
-              monthlyData[monthName].completed++;
-            }
+        // UPDATED: Different date filtering logic for delegation vs checklist
+        if (dashboardType === "delegation") {
+          // FIXED: Removed console.log("ram", ram)
+          // For DELEGATION mode: Process ALL tasks with valid task IDs, no date filtering
+          if (!taskId || taskId === null || taskId === undefined || taskId === '' ||
+            (typeof taskId === 'string' && taskId.trim() === '')) {
+            return null;
           }
         } else {
-          staffData.pendingTasks++;
+          // FIXED: Removed console.log("ram", ram)
+          // For CHECKLIST mode: Keep existing date filtering logic
+          const taskStartDateObj = parseDateFromDDMMYYYY(taskStartDate);
 
-          if (isDateInPast(taskStartDate) && !isDateToday(taskStartDate)) {
-            overdueTasks++;
-            statusData.Overdue++;
-          }
-
-          pendingTasks++;
-          statusData.Pending++;
-
-          const monthName = new Date().toLocaleString('default', { month: 'short' });
-          if (monthlyData[monthName]) {
-            monthlyData[monthName].pending++;
+          // Process tasks that have a valid End Date and are due up to tomorrow
+          if (!taskStartDateObj || taskStartDateObj > tomorrow) {
+            return null; // Skip tasks beyond tomorrow
           }
         }
-      } else {
-        // For CHECKLIST mode
-        const taskStartDateObj = parseDateFromDDMMYYYY(taskStartDate);
-        const shouldCountInStats = taskStartDateObj <= today;
 
-        if (shouldCountInStats) {
+        // Get completion data based on dashboard type
+        let completionDateValue, completionDate;
+        if (dashboardType === "delegation") {
+          // For delegation: Column L (index 11) - "Actual"
+          completionDateValue = getCellValue(row, 11);
+        } else {
+          // For checklist: Column K (index 10) - "Actual"
+          completionDateValue = getCellValue(row, 10);
+        }
+
+        completionDate = completionDateValue ? parseGoogleSheetsDate(String(completionDateValue)) : '';
+
+        // Track staff details
+        if (!staffTrackingMap.has(assignedTo)) {
+          staffTrackingMap.set(assignedTo, {
+            name: assignedTo,
+            totalTasks: 0,
+            completedTasks: 0,
+            pendingTasks: 0,
+            progress: 0
+          });
+        }
+
+        // Get additional task details
+        const taskDescription = getCellValue(row, 5) || 'Untitled Task'; // Column F
+        const frequency = getCellValue(row, 7) || 'one-time'; // Column H
+
+        // Determine task status
+        let status = 'pending';
+
+        if (completionDate && completionDate !== '') {
+          status = 'completed';
+        } else if (isDateInPast(taskStartDate) && !isDateToday(taskStartDate)) {
+          status = 'overdue';
+        } else {
+          status = 'pending';
+        }
+
+        const department = getCellValue(row, 2) || "";
+
+        // Create the task object
+        const taskObj = {
+          id: taskIdStr,
+          title: taskDescription,
+          assignedTo,
+          department,
+          taskStartDate,
+          dueDate: taskStartDate,
+          status,
+          frequency
+        };
+
+        // Update staff member totals
+        const staffData = staffTrackingMap.get(assignedTo);
+        staffData.totalTasks++;
+
+        // Count for dashboard cards
+        if (dashboardType === "delegation") {
+          // For DELEGATION mode: Count ALL valid tasks
           totalTasks++;
 
           if (status === 'completed') {
@@ -635,6 +590,17 @@ const fetchDepartmentData = async () => {
             staffData.completedTasks++;
             statusData.Completed++;
 
+            // Count by rating
+            const ratingValue = getCellValue(row, 17);
+            if (ratingValue === 1) {
+              completedRatingOne++;
+            } else if (ratingValue === 2) {
+              completedRatingTwo++;
+            } else if (ratingValue > 2) {
+              completedRatingThreePlus++;
+            }
+
+            // Update monthly data
             const completedMonth = parseDateFromDDMMYYYY(completionDate);
             if (completedMonth) {
               const monthName = completedMonth.toLocaleString('default', { month: 'short' });
@@ -653,92 +619,128 @@ const fetchDepartmentData = async () => {
             pendingTasks++;
             statusData.Pending++;
 
-            const monthName = today.toLocaleString('default', { month: 'short' });
+            const monthName = new Date().toLocaleString('default', { month: 'short' });
             if (monthlyData[monthName]) {
               monthlyData[monthName].pending++;
             }
           }
+        } else {
+          // For CHECKLIST mode
+          const taskStartDateObj = parseDateFromDDMMYYYY(taskStartDate);
+          const shouldCountInStats = taskStartDateObj <= today;
+
+          if (shouldCountInStats) {
+            totalTasks++;
+
+            if (status === 'completed') {
+              completedTasks++;
+              staffData.completedTasks++;
+              statusData.Completed++;
+
+              const completedMonth = parseDateFromDDMMYYYY(completionDate);
+              if (completedMonth) {
+                const monthName = completedMonth.toLocaleString('default', { month: 'short' });
+                if (monthlyData[monthName]) {
+                  monthlyData[monthName].completed++;
+                }
+              }
+            } else {
+              staffData.pendingTasks++;
+
+              if (isDateInPast(taskStartDate) && !isDateToday(taskStartDate)) {
+                overdueTasks++;
+                statusData.Overdue++;
+              }
+
+              pendingTasks++;
+              statusData.Pending++;
+
+              const monthName = today.toLocaleString('default', { month: 'short' });
+              if (monthlyData[monthName]) {
+                monthlyData[monthName].pending++;
+              }
+            }
+          }
         }
-      }
 
-      return taskObj;
-    }).filter(task => task !== null);
+        return taskObj;
+      }).filter(task => task !== null);
 
-    console.log("Processed rows:", processedRows.length);
+      console.log("Processed rows:", processedRows.length);
 
-    // Calculate completion rate
-    const completionRate = totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(1) : 0;
+      // Calculate completion rate
+      const completionRate = totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(1) : 0;
 
-    // Convert monthly data to chart format
-    const barChartData = Object.entries(monthlyData).map(([name, data]) => ({
-      name,
-      completed: data.completed,
-      pending: data.pending
-    }));
+      // Convert monthly data to chart format
+      const barChartData = Object.entries(monthlyData).map(([name, data]) => ({
+        name,
+        completed: data.completed,
+        pending: data.pending
+      }));
 
-    // Convert status data to pie chart format
-    const pieChartData = [
-      { name: "Completed", value: statusData.Completed, color: "#22c55e" },
-      { name: "Pending", value: statusData.Pending, color: "#facc15" },
-      { name: "Overdue", value: statusData.Overdue, color: "#ef4444" }
-    ];
+      // Convert status data to pie chart format
+      const pieChartData = [
+        { name: "Completed", value: statusData.Completed, color: "#22c55e" },
+        { name: "Pending", value: statusData.Pending, color: "#facc15" },
+        { name: "Overdue", value: statusData.Overdue, color: "#ef4444" }
+      ];
 
-    // Process staff tracking map
-    const staffMembers = Array.from(staffTrackingMap.values()).map(staff => {
-      const progress = staff.totalTasks > 0
-        ? Math.round((staff.completedTasks / staff.totalTasks) * 100)
-        : 0;
+      // Process staff tracking map
+      const staffMembers = Array.from(staffTrackingMap.values()).map(staff => {
+        const progress = staff.totalTasks > 0
+          ? Math.round((staff.completedTasks / staff.totalTasks) * 100)
+          : 0;
 
-      return {
-        id: staff.name.replace(/\s+/g, '-').toLowerCase(),
-        name: staff.name,
-        email: `${staff.name.toLowerCase().replace(/\s+/g, '.')}@example.com`,
-        totalTasks: staff.totalTasks,
-        completedTasks: staff.completedTasks,
-        pendingTasks: staff.pendingTasks,
-        progress
-      };
-    });
+        return {
+          id: staff.name.replace(/\s+/g, '-').toLowerCase(),
+          name: staff.name,
+          email: `${staff.name.toLowerCase().replace(/\s+/g, '.')}@example.com`,
+          totalTasks: staff.totalTasks,
+          completedTasks: staff.completedTasks,
+          pendingTasks: staff.pendingTasks,
+          progress
+        };
+      });
 
-    // Update department data state
-    setDepartmentData({
-      allTasks: processedRows,
-      staffMembers,
-      totalTasks,
-      completedTasks,
-      pendingTasks,
-      overdueTasks,
-      completionRate,
-      barChartData,
-      pieChartData,
-      completedRatingOne,
-      completedRatingTwo,
-      completedRatingThreePlus
-    });
+      // Update department data state
+      setDepartmentData({
+        allTasks: processedRows,
+        staffMembers,
+        totalTasks,
+        completedTasks,
+        pendingTasks,
+        overdueTasks,
+        completionRate,
+        barChartData,
+        pieChartData,
+        completedRatingOne,
+        completedRatingTwo,
+        completedRatingThreePlus
+      });
 
-    console.log("Department data updated successfully");
+      console.log("Department data updated successfully");
 
-  } catch (error) {
-    console.error(`Error fetching ${sheetName} sheet data:`, error);
-    console.error("Error details:", error.message);
-    
-    // Set empty data to prevent UI errors
-    setDepartmentData({
-      allTasks: [],
-      staffMembers: [],
-      totalTasks: 0,
-      completedTasks: 0,
-      pendingTasks: 0,
-      overdueTasks: 0,
-      completionRate: 0,
-      barChartData: [],
-      pieChartData: [],
-      completedRatingOne: 0,
-      completedRatingTwo: 0,
-      completedRatingThreePlus: 0
-    });
-  }
-};
+    } catch (error) {
+      console.error(`Error fetching ${sheetName} sheet data:`, error);
+      console.error("Error details:", error.message);
+
+      // Set empty data to prevent UI errors
+      setDepartmentData({
+        allTasks: [],
+        staffMembers: [],
+        totalTasks: 0,
+        completedTasks: 0,
+        pendingTasks: 0,
+        overdueTasks: 0,
+        completionRate: 0,
+        barChartData: [],
+        pieChartData: [],
+        completedRatingOne: 0,
+        completedRatingTwo: 0,
+        completedRatingThreePlus: 0
+      });
+    }
+  };
 
   useEffect(() => {
     fetchDepartmentData();
@@ -891,15 +893,15 @@ const fetchDepartmentData = async () => {
     )
   }
 
-  // Staff Tasks Table Component
-  const StaffTasksTable = () => {
+  // User Tasks Table Component
+  const UserTasksTable = () => {
     // Get today's date for filtering
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Calculate staff tasks excluding upcoming tasks
+    // Calculate user tasks excluding upcoming tasks
     const staffMembersWithCurrentTasks = departmentData.staffMembers.map(staff => {
-      // Filter tasks assigned to this staff member that are not upcoming (due today or before)
+      // Filter tasks assigned to this user that are not upcoming (due today or before)
       const staffTasks = departmentData.allTasks.filter(task => {
         const taskDate = parseDateFromDDMMYYYY(task.taskStartDate);
         return task.assignedTo === staff.name && taskDate && taskDate <= today;
@@ -921,135 +923,135 @@ const fetchDepartmentData = async () => {
 
     return (
       <>
-      
-      <div className="hidden sm:block rounded-md border border-gray-200 overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Name
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Total Tasks
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Completed
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Pending
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Progress
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {staffMembersWithCurrentTasks.map((staff) => (
-              <tr key={staff.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
+
+        <div className="hidden sm:block rounded-md border border-gray-200 overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Name
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Total Tasks
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Completed
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Pending
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Progress
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {staffMembersWithCurrentTasks.map((staff) => (
+                <tr key={staff.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{staff.name}</div>
+                      <div className="text-xs text-gray-500">{staff.email}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{staff.totalTasks}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{staff.completedTasks}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{staff.pendingTasks}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <div className="w-[100px] bg-gray-200 rounded-full h-2">
+                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${staff.progress}%` }}></div>
+                      </div>
+                      <span className="text-xs text-gray-500">{staff.progress}%</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {staff.progress >= 80 ? (
+                      <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        Excellent
+                      </span>
+                    ) : staff.progress >= 60 ? (
+                      <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                        Good
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                        Needs Improvement
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+
+
+        {/* Mobile Card View */}
+        <div className="sm:hidden space-y-4">
+          {staffMembersWithCurrentTasks.map((staff) => (
+            <div key={staff.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:bg-gray-50">
+              <div className="space-y-3">
+                {/* Name and Email */}
+                <div className="flex justify-between items-center border-b pb-2">
                   <div>
                     <div className="text-sm font-medium text-gray-900">{staff.name}</div>
                     <div className="text-xs text-gray-500">{staff.email}</div>
                   </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{staff.totalTasks}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{staff.completedTasks}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{staff.pendingTasks}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                    <div className="w-[100px] bg-gray-200 rounded-full h-2">
-                      <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${staff.progress}%` }}></div>
-                    </div>
-                    <span className="text-xs text-gray-500">{staff.progress}%</span>
+                  <div>
+                    {staff.progress >= 80 ? (
+                      <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        Excellent
+                      </span>
+                    ) : staff.progress >= 60 ? (
+                      <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                        Good
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                        Needs Improvement
+                      </span>
+                    )}
                   </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {staff.progress >= 80 ? (
-                    <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                      Excellent
-                    </span>
-                  ) : staff.progress >= 60 ? (
-                    <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                      Good
-                    </span>
-                  ) : (
-                    <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                      Needs Improvement
-                    </span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                </div>
 
+                {/* Task Statistics */}
+                <div className="grid grid-cols-3 gap-4 border-b pb-2">
+                  <div className="text-center">
+                    <div className="text-sm font-medium text-gray-700">Total</div>
+                    <div className="text-lg font-bold text-gray-900">{staff.totalTasks}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-sm font-medium text-gray-700">Completed</div>
+                    <div className="text-lg font-bold text-green-600">{staff.completedTasks}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-sm font-medium text-gray-700">Pending</div>
+                    <div className="text-lg font-bold text-amber-600">{staff.pendingTasks}</div>
+                  </div>
+                </div>
 
-
-      {/* Mobile Card View */}
-      <div className="sm:hidden space-y-4">
-        {staffMembersWithCurrentTasks.map((staff) => (
-          <div key={staff.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:bg-gray-50">
-            <div className="space-y-3">
-              {/* Name and Email */}
-              <div className="flex justify-between items-center border-b pb-2">
-                <div>
-                  <div className="text-sm font-medium text-gray-900">{staff.name}</div>
-                  <div className="text-xs text-gray-500">{staff.email}</div>
-                </div>
-                <div>
-                  {staff.progress >= 80 ? (
-                    <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                      Excellent
-                    </span>
-                  ) : staff.progress >= 60 ? (
-                    <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                      Good
-                    </span>
-                  ) : (
-                    <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                      Needs Improvement
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Task Statistics */}
-              <div className="grid grid-cols-3 gap-4 border-b pb-2">
-                <div className="text-center">
-                  <div className="text-sm font-medium text-gray-700">Total</div>
-                  <div className="text-lg font-bold text-gray-900">{staff.totalTasks}</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-sm font-medium text-gray-700">Completed</div>
-                  <div className="text-lg font-bold text-green-600">{staff.completedTasks}</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-sm font-medium text-gray-700">Pending</div>
-                  <div className="text-lg font-bold text-amber-600">{staff.pendingTasks}</div>
-                </div>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">Progress</span>
-                  <span className="text-sm font-bold text-gray-900">{staff.progress}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div 
-                    className="bg-blue-600 h-3 rounded-full transition-all duration-300" 
-                    style={{ width: `${staff.progress}%` }}
-                  ></div>
+                {/* Progress Bar */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">Progress</span>
+                    <span className="text-sm font-bold text-gray-900">{staff.progress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div
+                      className="bg-blue-600 h-3 rounded-full transition-all duration-300"
+                      style={{ width: `${staff.progress}%` }}
+                    ></div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
       </>
     );
   };
@@ -1058,8 +1060,26 @@ const fetchDepartmentData = async () => {
     <AdminLayout>
       <div className="space-y-6">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <h1 className="text-2xl font-bold tracking-tight text-purple-500">Admin Dashboard</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-purple-500">
+            {userRole === "admin" ? "Admin Dashboard" : "User Dashboard"}
+          </h1>
           <div className="flex items-center gap-2">
+            {/* Checklist Category Filter - Moved to top */}
+            {dashboardType === "checklist" && (
+              <div className="flex items-center">
+                {/* <select
+                  id="task-view-filter-top"
+                  value={taskView}
+                  onChange={(e) => setTaskView(e.target.value)}
+                  className="rounded-md border border-purple-200 p-2 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 bg-white min-w-[140px]"
+                >
+                  <option value="recent">Today Tasks</option>
+                  <option value="upcoming">Upcoming Tasks</option>
+                  <option value="overdue">Overdue Tasks</option>
+                </select> */}
+              </div>
+            )}
+
             {/* Dashboard Type Selection */}
             <select
               value={dashboardType}
@@ -1075,7 +1095,7 @@ const fetchDepartmentData = async () => {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-lg border border-l-4 border-l-blue-500 shadow-md hover:shadow-lg transition-all bg-white"onClick={() => handleCardClick('total')}>
+          <div className="rounded-lg border border-l-4 border-l-blue-500 shadow-md hover:shadow-lg transition-all bg-white" onClick={() => handleCardClick('total')}>
             <div className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-r from-blue-50 to-blue-100 rounded-tr-lg p-4">
               <h3 className="text-sm font-medium text-blue-700">Total Tasks</h3>
               <ListTodo className="h-4 w-4 text-blue-500" />
@@ -1091,7 +1111,7 @@ const fetchDepartmentData = async () => {
             </div>
           </div>
 
-          <div className="rounded-lg border border-l-4 border-l-green-500 shadow-md hover:shadow-lg transition-all bg-white"onClick={() => handleCardClick('completed')}>
+          <div className="rounded-lg border border-l-4 border-l-green-500 shadow-md hover:shadow-lg transition-all bg-white" onClick={() => handleCardClick('completed')}>
             <div className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-r from-green-50 to-green-100 rounded-tr-lg p-4">
               <h3 className="text-sm font-medium text-green-700">
                 {dashboardType === "delegation" ? "Completed Once" : "Completed Tasks"}
@@ -1108,7 +1128,7 @@ const fetchDepartmentData = async () => {
             </div>
           </div>
 
-          <div className="rounded-lg border border-l-4 border-l-amber-500 shadow-md hover:shadow-lg transition-all bg-white"onClick={() => handleCardClick('pending')}>
+          <div className="rounded-lg border border-l-4 border-l-amber-500 shadow-md hover:shadow-lg transition-all bg-white" onClick={() => handleCardClick('pending')}>
             <div className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-r from-amber-50 to-amber-100 rounded-tr-lg p-4">
               <h3 className="text-sm font-medium text-amber-700">
                 {dashboardType === "delegation" ? "Completed Twice" : "Pending Tasks"}
@@ -1129,7 +1149,7 @@ const fetchDepartmentData = async () => {
             </div>
           </div>
 
-          <div className="rounded-lg border border-l-4 border-l-red-500 shadow-md hover:shadow-lg transition-all bg-white"onClick={() => handleCardClick('overdue')}>
+          <div className="rounded-lg border border-l-4 border-l-red-500 shadow-md hover:shadow-lg transition-all bg-white" onClick={() => handleCardClick('overdue')}>
             <div className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-r from-red-50 to-red-100 rounded-tr-lg p-4">
               <h3 className="text-sm font-medium text-red-700">
                 {dashboardType === "delegation" ? "Completed 3+ Times" : "Overdue Tasks"}
@@ -1151,7 +1171,7 @@ const fetchDepartmentData = async () => {
           </div>
         </div>
 
-        {/* Task Navigation Tabs - Restored to 3 tabs for both modes */}
+        {/* Task Navigation Tabs (Simplified) */}
         <div className="w-full overflow-hidden rounded-lg border border-gray-200 bg-white">
           <div className="grid grid-cols-3">
             <button
@@ -1159,7 +1179,7 @@ const fetchDepartmentData = async () => {
                 }`}
               onClick={() => setTaskView("recent")}
             >
-              {dashboardType === "delegation" ? "Today Tasks" : "Recent Tasks"}
+              Today Tasks
             </button>
             <button
               className={`py-3 text-center font-medium transition-colors ${taskView === "upcoming" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -1195,7 +1215,7 @@ const fetchDepartmentData = async () => {
               <div className="space-y-2 md:w-[180px]">
                 <label htmlFor="staff-filter" className="flex items-center text-purple-700">
                   <Filter className="h-4 w-4 mr-2" />
-                  Filter by Staff
+                  Filter by User
                 </label>
                 <select
                   id="staff-filter"
@@ -1203,7 +1223,7 @@ const fetchDepartmentData = async () => {
                   onChange={(e) => setFilterStaff(e.target.value)}
                   className="w-full rounded-md border border-purple-200 p-2 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
                 >
-                  <option value="all">All Staff</option>
+                  <option value="all">All Users</option>
                   {departmentData.staffMembers.map((staff) => (
                     <option key={staff.id} value={staff.name}>
                       {staff.name}
@@ -1219,98 +1239,98 @@ const fetchDepartmentData = async () => {
               </div>
             ) : (
               <>
-              <div className="hidden sm:block overflow-x-auto" style={{ maxHeight: "400px", overflowY: "auto" }}>
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50 sticky top-0 z-10">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Task ID
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Task Description
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Assigned To
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Task End Date
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Frequency
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {getTasksByView(taskView).map((task) => (
-                      <tr key={task.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{task.id}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{task.title}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{task.assignedTo}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{task.taskStartDate}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                <div className="hidden sm:block overflow-x-auto" style={{ maxHeight: "400px", overflowY: "auto" }}>
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50 sticky top-0 z-10">
+                      <tr>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Task ID
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Task Description
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Assigned To
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Task End Date
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Frequency
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {getTasksByView(taskView).map((task) => (
+                        <tr key={task.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{task.id}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{task.title}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{task.assignedTo}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{task.taskStartDate}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${getFrequencyColor(task.frequency)}`}
+                            >
+                              {task.frequency.charAt(0).toUpperCase() + task.frequency.slice(1)}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+
+                {/* Mobile Card View */}
+                <div className="sm:hidden space-y-4" style={{ maxHeight: "400px", overflowY: "auto" }}>
+                  {getTasksByView(taskView).map((task) => (
+                    <div key={task.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:bg-gray-50">
+                      <div className="space-y-3">
+                        {/* Task ID */}
+                        <div className="flex justify-between items-center border-b pb-2">
+                          <span className="font-medium text-gray-700">Task ID:</span>
+                          <div className="text-sm text-gray-900 break-words">
+                            {task.id}
+                          </div>
+                        </div>
+
+                        {/* Task Description */}
+                        <div className="flex justify-between items-start border-b pb-2">
+                          <span className="font-medium text-gray-700">Description:</span>
+                          <div className="text-sm text-gray-500 break-words text-right max-w-[60%]">
+                            {task.title}
+                          </div>
+                        </div>
+
+                        {/* Assigned To */}
+                        <div className="flex justify-between items-center border-b pb-2">
+                          <span className="font-medium text-gray-700">Assigned To:</span>
+                          <div className="text-sm text-gray-500 break-words">
+                            {task.assignedTo}
+                          </div>
+                        </div>
+
+                        {/* Task End Date */}
+                        <div className="flex justify-between items-center border-b pb-2">
+                          <span className="font-medium text-gray-700">End Date:</span>
+                          <div className="text-sm text-gray-500 break-words">
+                            {task.taskStartDate}
+                          </div>
+                        </div>
+
+                        {/* Frequency */}
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium text-gray-700">Frequency:</span>
                           <span
                             className={`px-2 py-1 rounded-full text-xs font-medium ${getFrequencyColor(task.frequency)}`}
                           >
                             {task.frequency.charAt(0).toUpperCase() + task.frequency.slice(1)}
                           </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-
-               {/* Mobile Card View */}
-    <div className="sm:hidden space-y-4" style={{ maxHeight: "400px", overflowY: "auto" }}>
-      {getTasksByView(taskView).map((task) => (
-        <div key={task.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:bg-gray-50">
-          <div className="space-y-3">
-            {/* Task ID */}
-            <div className="flex justify-between items-center border-b pb-2">
-              <span className="font-medium text-gray-700">Task ID:</span>
-              <div className="text-sm text-gray-900 break-words">
-                {task.id}
-              </div>
-            </div>
-
-            {/* Task Description */}
-            <div className="flex justify-between items-start border-b pb-2">
-              <span className="font-medium text-gray-700">Description:</span>
-              <div className="text-sm text-gray-500 break-words text-right max-w-[60%]">
-                {task.title}
-              </div>
-            </div>
-
-            {/* Assigned To */}
-            <div className="flex justify-between items-center border-b pb-2">
-              <span className="font-medium text-gray-700">Assigned To:</span>
-              <div className="text-sm text-gray-500 break-words">
-                {task.assignedTo}
-              </div>
-            </div>
-
-            {/* Task End Date */}
-            <div className="flex justify-between items-center border-b pb-2">
-              <span className="font-medium text-gray-700">End Date:</span>
-              <div className="text-sm text-gray-500 break-words">
-                {task.taskStartDate}
-              </div>
-            </div>
-
-            {/* Frequency */}
-            <div className="flex justify-between items-center">
-              <span className="font-medium text-gray-700">Frequency:</span>
-              <span
-                className={`px-2 py-1 rounded-full text-xs font-medium ${getFrequencyColor(task.frequency)}`}
-              >
-                {task.frequency.charAt(0).toUpperCase() + task.frequency.slice(1)}
-              </span>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </>
             )}
           </div>
@@ -1364,7 +1384,7 @@ const fetchDepartmentData = async () => {
               className={`flex-1 py-2 text-center rounded-md transition-colors ${activeTab === "staff" ? "bg-purple-600 text-white" : "text-purple-700 hover:bg-purple-200"
                 }`}
             >
-              Staff Performance
+              User Performance
             </button>
           </div>
 
@@ -1392,11 +1412,11 @@ const fetchDepartmentData = async () => {
               </div>
               <div className="rounded-lg border border-purple-200 shadow-md bg-white">
                 <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100 p-4">
-                  <h3 className="text-purple-700 font-medium">Staff Task Summary</h3>
-                  <p className="text-purple-600 text-sm">Overview of tasks assigned to each staff member</p>
+                  <h3 className="text-purple-700 font-medium">User Task Summary</h3>
+                  <p className="text-purple-600 text-sm">Overview of tasks assigned to each user</p>
                 </div>
                 <div className="p-4">
-                  <StaffTasksTable />
+                  <UserTasksTable />
                 </div>
               </div>
             </div>
@@ -1594,11 +1614,11 @@ const fetchDepartmentData = async () => {
           {activeTab === "staff" && (
             <div className="rounded-lg border border-purple-200 shadow-md bg-white">
               <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100 p-4">
-                <h3 className="text-purple-700 font-medium">Staff Performance</h3>
+                <h3 className="text-purple-700 font-medium">User Performance</h3>
                 <p className="text-purple-600 text-sm">
                   {dashboardType === "delegation"
-                    ? "Task completion rates by staff member (all delegation sheet data)"
-                    : "Task completion rates by staff member (tasks up to today only)"
+                    ? "Task completion rates by user (all delegation sheet data)"
+                    : "Task completion rates by user (tasks up to today only)"
                   }
                 </p>
               </div>
@@ -1620,8 +1640,8 @@ const fetchDepartmentData = async () => {
                                 <h3 className="text-lg font-medium text-green-700">Top Performers</h3>
                                 <p className="text-sm text-green-600">
                                   {dashboardType === "delegation"
-                                    ? "Staff with high task completion rates (all delegation data)"
-                                    : "Staff with high task completion rates (tasks up to today only)"
+                                    ? "Users with high task completion rates (all delegation data)"
+                                    : "Users with high task completion rates (tasks up to today only)"
                                   }
                                 </p>
                               </div>
@@ -1662,8 +1682,8 @@ const fetchDepartmentData = async () => {
                                 <h3 className="text-lg font-medium text-yellow-700">Average Performers</h3>
                                 <p className="text-sm text-yellow-600">
                                   {dashboardType === "delegation"
-                                    ? "Staff with moderate task completion rates (all delegation data)"
-                                    : "Staff with moderate task completion rates (tasks up to today only)"
+                                    ? "Users with moderate task completion rates (all delegation data)"
+                                    : "Users with moderate task completion rates (tasks up to today only)"
                                   }
                                 </p>
                               </div>
@@ -1691,7 +1711,7 @@ const fetchDepartmentData = async () => {
                                   }
                                   {sortedStaffMembers.filter(staff => staff.progress >= 40 && staff.progress < 70).length === 0 && (
                                     <div className="text-center p-4 text-gray-500">
-                                      <p>No staff members with moderate completion rates found.</p>
+                                      <p>No users with moderate completion rates found.</p>
                                     </div>
                                   )}
                                 </div>
@@ -1704,8 +1724,8 @@ const fetchDepartmentData = async () => {
                                 <h3 className="text-lg font-medium text-red-700">Needs Improvement</h3>
                                 <p className="text-sm text-red-600">
                                   {dashboardType === "delegation"
-                                    ? "Staff with lower task completion rates (all delegation data)"
-                                    : "Staff with lower task completion rates (tasks up to today only)"
+                                    ? "Users with lower task completion rates (all delegation data)"
+                                    : "Users with lower task completion rates (tasks up to today only)"
                                   }
                                 </p>
                               </div>
@@ -1733,7 +1753,7 @@ const fetchDepartmentData = async () => {
                                   }
                                   {sortedStaffMembers.filter(staff => staff.progress < 40).length === 0 && (
                                     <div className="text-center p-4 text-gray-500">
-                                      <p>No staff members with low completion rates found.</p>
+                                      <p>No users with low completion rates found.</p>
                                     </div>
                                   )}
                                 </div>
@@ -1792,7 +1812,7 @@ const fetchDepartmentData = async () => {
                       <p>
                         {dashboardType === "delegation"
                           ? "No delegation data available."
-                          : "Loading staff data..."
+                          : "Loading user data..."
                         }
                       </p>
                     </div>
@@ -1803,148 +1823,148 @@ const fetchDepartmentData = async () => {
           )}
         </div>
         {popupOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg shadow-xl w-11/12 max-w-6xl h-5/6 flex flex-col">
-            <div className="flex justify-between items-center p-4 border-b">
-              <h2 className="text-xl font-bold text-purple-700">
-                {popupType.charAt(0).toUpperCase() + popupType.slice(1)} Tasks Details
-              </h2>
-              <button
-                onClick={() => setPopupOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white rounded-lg shadow-xl w-11/12 max-w-6xl h-5/6 flex flex-col">
+              <div className="flex justify-between items-center p-4 border-b">
+                <h2 className="text-xl font-bold text-purple-700">
+                  {popupType.charAt(0).toUpperCase() + popupType.slice(1)} Tasks Details
+                </h2>
+                <button
+                  onClick={() => setPopupOpen(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
 
-            <div className="p-4 border-b bg-gray-50">
-              <div className="flex flex-wrap gap-4 items-center">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                  <input
-                    type="text"
-                    placeholder="Search tasks..."
-                    value={popupFilters.search}
-                    onChange={(e) => handlePopupFilterChange('search', e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-purple-200 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
+              <div className="p-4 border-b bg-gray-50">
+                <div className="flex flex-wrap gap-4 items-center">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                    <input
+                      type="text"
+                      placeholder="Search tasks..."
+                      value={popupFilters.search}
+                      onChange={(e) => handlePopupFilterChange('search', e.target.value)}
+                      className="pl-10 pr-4 py-2 border border-purple-200 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+
+                  <select
+                    value={popupFilters.department}
+                    onChange={(e) => handlePopupFilterChange('department', e.target.value)}
+                    className="border border-purple-200 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="all">All Departments</option>
+                    {Array.from(new Set(popupData.map(task => task.department).filter(Boolean))).map(dept => (
+                      <option key={dept} value={dept}>{dept}</option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={popupFilters.name}
+                    onChange={(e) => handlePopupFilterChange('name', e.target.value)}
+                    className="border border-purple-200 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="all">All Names</option>
+                    {Array.from(new Set(popupData.map(task => task.assignedTo).filter(Boolean))).map(name => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+
+                  <button
+                    onClick={() => setPopupFilters({
+                      search: "",
+                      department: "all",
+                      givenBy: "all",
+                      name: "all",
+                    })}
+                    className="px-4 py-2 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 transition-colors font-medium flex items-center gap-2"
+                  >
+                    <X size={16} />
+                    Clear Filters
+                  </button>
+
+                  <h1 className="text-blue-800 font-medium">
+                    Total Tasks: {getFilteredPopupData().length}
+                  </h1>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-auto">
+                <div className="hidden md:block">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50 sticky top-0">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Task ID</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
+                        {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Given By</th> */}
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">End Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Frequency</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {getFilteredPopupData().map(task => (
+                        <tr key={task.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 text-sm text-gray-900">{task.id}</td>
+                          <td className="px-6 py-4 text-sm text-gray-500">{task.department}</td>
+                          {/* <td className="px-6 py-4 text-sm text-gray-500">Given By data</td> */}
+                          <td className="px-6 py-4 text-sm text-gray-500">{task.assignedTo}</td>
+                          <td className="px-6 py-4 text-sm text-gray-500">{task.title}</td>
+                          <td className="px-6 py-4 text-sm text-gray-500">{task.taskStartDate}</td>
+                          <td className="px-6 py-4 text-sm text-gray-500">{task.frequency}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
 
-                <select
-                  value={popupFilters.department}
-                  onChange={(e) => handlePopupFilterChange('department', e.target.value)}
-                  className="border border-purple-200 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                >
-                  <option value="all">All Departments</option>
-                  {Array.from(new Set(popupData.map(task => task.department).filter(Boolean))).map(dept => (
-                    <option key={dept} value={dept}>{dept}</option>
-                  ))}
-                </select>
-
-                <select
-                  value={popupFilters.name}
-                  onChange={(e) => handlePopupFilterChange('name', e.target.value)}
-                  className="border border-purple-200 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                >
-                  <option value="all">All Names</option>
-                  {Array.from(new Set(popupData.map(task => task.assignedTo).filter(Boolean))).map(name => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-                </select>
-
-                <button
-                  onClick={() => setPopupFilters({
-                    search: "",
-                    department: "all",
-                    givenBy: "all",
-                    name: "all",
-                  })}
-                  className="px-4 py-2 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 transition-colors font-medium flex items-center gap-2"
-                >
-                  <X size={16} />
-                  Clear Filters
-                </button>
-
-                <h1 className="text-blue-800 font-medium">
-                  Total Tasks: {getFilteredPopupData().length}
-                </h1>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-auto">
-              <div className="hidden md:block">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50 sticky top-0">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Task ID</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
-                      {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Given By</th> */}
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">End Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Frequency</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {getFilteredPopupData().map(task => (
-                      <tr key={task.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 text-sm text-gray-900">{task.id}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{task.department}</td>
-                        {/* <td className="px-6 py-4 text-sm text-gray-500">Given By data</td> */}
-                        <td className="px-6 py-4 text-sm text-gray-500">{task.assignedTo}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{task.title}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{task.taskStartDate}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{task.frequency}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="md:hidden space-y-4 p-4">
-                {getFilteredPopupData().map(task => (
-                  <div key={task.id} className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <span className="text-xs font-medium text-gray-500">Task ID</span>
-                        <p className="text-sm font-semibold text-gray-900">{task.id}</p>
-                      </div>
-                      <span className={`px-2 py-1 text-xs rounded-full ${task.frequency === 'daily' ? 'bg-blue-100 text-blue-700' :
+                <div className="md:hidden space-y-4 p-4">
+                  {getFilteredPopupData().map(task => (
+                    <div key={task.id} className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className="text-xs font-medium text-gray-500">Task ID</span>
+                          <p className="text-sm font-semibold text-gray-900">{task.id}</p>
+                        </div>
+                        <span className={`px-2 py-1 text-xs rounded-full ${task.frequency === 'daily' ? 'bg-blue-100 text-blue-700' :
                           task.frequency === 'weekly' ? 'bg-purple-100 text-purple-700' :
                             task.frequency === 'monthly' ? 'bg-orange-100 text-orange-700' :
                               'bg-gray-100 text-gray-700'
-                        }`}>
-                        {task.frequency}
-                      </span>
-                    </div>
-
-                    <div>
-                      <span className="text-xs font-medium text-gray-500">Description</span>
-                      <p className="text-sm text-gray-900 mt-1">{task.title}</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <span className="text-xs font-medium text-gray-500">Department</span>
-                        <p className="text-sm text-gray-900">{task.department}</p>
+                          }`}>
+                          {task.frequency}
+                        </span>
                       </div>
+
                       <div>
-                        <span className="text-xs font-medium text-gray-500">Assigned To</span>
-                        <p className="text-sm text-gray-900">{task.assignedTo}</p>
+                        <span className="text-xs font-medium text-gray-500">Description</span>
+                        <p className="text-sm text-gray-900 mt-1">{task.title}</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <span className="text-xs font-medium text-gray-500">Department</span>
+                          <p className="text-sm text-gray-900">{task.department}</p>
+                        </div>
+                        <div>
+                          <span className="text-xs font-medium text-gray-500">Assigned To</span>
+                          <p className="text-sm text-gray-900">{task.assignedTo}</p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="text-xs font-medium text-gray-500">End Date</span>
+                        <p className="text-sm text-gray-900">{task.taskStartDate}</p>
                       </div>
                     </div>
-
-                    <div>
-                      <span className="text-xs font-medium text-gray-500">End Date</span>
-                      <p className="text-sm text-gray-900">{task.taskStartDate}</p>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </AdminLayout>
   )
