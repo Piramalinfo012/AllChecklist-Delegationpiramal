@@ -18,7 +18,7 @@ import AdminLayout from "../../components/layout/AdminLayout";
 const CONFIG = {
   // Google Apps Script URL
   APPS_SCRIPT_URL:
-    "https://script.google.com/macros/s/AKfycbwcmMvtW0SIzCnaVf_b5Z2-RXc6Ujo9i0uJAfwLilw7s3I9CIgBpE8RENgy8abKV08G/exec",
+    "https://script.google.com/macros/s/AKfycbyaBCq6ZKHhOZBXRp9qw3hqrXh_aIOPvIHh_G41KtzPovhjl-UjEgj75Ok6gwJhrPOX/exec",
   // Google Drive folder ID for file uploads
   DRIVE_FOLDER_ID: "1Y1lg8X7qFA4KgvcaVA_ywKx1gOnZ2ZO6",
   // Sheet name to work with
@@ -63,7 +63,7 @@ function Approval() {
 
 
   const [delegationHistoryData, setDelegationHistoryData] = useState([]);
-const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
+  const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
 
   const isAdmin = userRole === "admin";
   // UPDATED: Format date-time to DD/MM/YYYY HH:MM:SS
@@ -195,15 +195,15 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
     const newStatus = editedAdminStatus[rowId];
     const sheetType = historyItem._sheetType || 'checklist';
     const targetSheet = sheetType === 'delegation' ? 'Delegation' : CONFIG.SHEET_NAME;
-  
+
     if (savingEdits.has(rowId)) return;
-  
+
     setSavingEdits((prev) => new Set([...prev, rowId]));
-  
+
     try {
       const statusToSend =
         newStatus === "" || newStatus === undefined ? "" : newStatus;
-  
+
       const submissionData = [
         {
           taskId: historyItem._taskId || historyItem["col1"],
@@ -212,19 +212,19 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
           sheetType: sheetType,
         },
       ];
-  
+
       const formData = new FormData();
       formData.append("sheetName", targetSheet);
       formData.append("action", "updateAdminDone");
       formData.append("rowData", JSON.stringify(submissionData));
-  
+
       const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
         method: "POST",
         body: formData,
       });
-  
+
       const responseText = await response.text();
-  
+
       let result;
       try {
         result = JSON.parse(responseText);
@@ -232,11 +232,11 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
         console.error("JSON Parse Error:", parseError);
         throw new Error(`Invalid response format: ${responseText}`);
       }
-  
+
       if (result.success) {
         const updatedStatus =
           newStatus === "" || newStatus === undefined ? "" : newStatus;
-  
+
         // Update the correct history data based on sheet type
         if (sheetType === 'delegation') {
           setDelegationHistoryData((prev) =>
@@ -251,21 +251,21 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
             )
           );
         }
-  
+
         setEditingRows((prev) => {
           const newSet = new Set(prev);
           newSet.delete(rowId);
           return newSet;
         });
-  
+
         setEditedAdminStatus((prev) => {
           const newStatusObj = { ...prev };
           delete newStatusObj[rowId];
           return newStatusObj;
         });
-  
+
         setSuccessMessage("Admin status updated successfully!");
-  
+
         setTimeout(() => {
           fetchSheetData();
         }, 3000);
@@ -355,11 +355,11 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
   const confirmMarkDone = async () => {
     setConfirmationModal({ isOpen: false, itemCount: 0 });
     setMarkingAsDone(true);
-  
+
     try {
       const checklistItems = selectedHistoryItems.filter(item => item._sheetType === 'checklist');
       const delegationItems = selectedHistoryItems.filter(item => item._sheetType === 'delegation');
-  
+
       // Submit checklist items
       if (checklistItems.length > 0) {
         const checklistSubmissionData = checklistItems.map((historyItem) => ({
@@ -368,12 +368,12 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
           adminDoneStatus: "Done",
           sheetType: 'checklist',
         }));
-  
+
         const checklistFormData = new FormData();
         checklistFormData.append("sheetName", CONFIG.SHEET_NAME);
         checklistFormData.append("action", "updateAdminDone");
         checklistFormData.append("rowData", JSON.stringify(checklistSubmissionData));
-  
+
         const checklistResponse = await fetch(CONFIG.APPS_SCRIPT_URL, {
           method: "POST",
           body: checklistFormData,
@@ -383,7 +383,7 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
           throw new Error(checklistResult.error || "Failed to mark checklist items as Admin Done");
         }
       }
-  
+
       // Submit delegation items
       if (delegationItems.length > 0) {
         const delegationSubmissionData = delegationItems.map((historyItem) => ({
@@ -392,12 +392,12 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
           adminDoneStatus: "Done",
           sheetType: 'delegation',
         }));
-  
+
         const delegationFormData = new FormData();
         delegationFormData.append("sheetName", "Delegation");
         delegationFormData.append("action", "updateAdminDone");
         delegationFormData.append("rowData", JSON.stringify(delegationSubmissionData));
-  
+
         const delegationResponse = await fetch(CONFIG.APPS_SCRIPT_URL, {
           method: "POST",
           body: delegationFormData,
@@ -407,7 +407,7 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
           throw new Error(delegationResult.error || "Failed to mark delegation items as Admin Done");
         }
       }
-  
+
       // Remove processed items from both history views
       setHistoryData((prev) =>
         prev.filter(
@@ -417,7 +417,7 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
             )
         )
       );
-      
+
       setDelegationHistoryData((prev) =>
         prev.filter(
           (item) =>
@@ -426,12 +426,12 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
             )
         )
       );
-  
+
       setSelectedHistoryItems([]);
       setSuccessMessage(
         `Successfully marked ${selectedHistoryItems.length} items as Admin Done!`
       );
-  
+
       setTimeout(() => {
         fetchSheetData();
       }, 2000);
@@ -448,13 +448,13 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
       .filter((item) => {
         const matchesSearch = searchTerm
           ? Object.values(item).some(
-              (value) =>
-                value &&
-                value
-                  .toString()
-                  .toLowerCase()
-                  .includes(searchTerm.toLowerCase())
-            )
+            (value) =>
+              value &&
+              value
+                .toString()
+                .toLowerCase()
+                .includes(searchTerm.toLowerCase())
+          )
           : true;
         const matchesMember =
           selectedMembers.length > 0
@@ -495,13 +495,13 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
       .filter((item) => {
         const matchesSearch = searchTerm
           ? Object.values(item).some(
-              (value) =>
-                value &&
-                value
-                  .toString()
-                  .toLowerCase()
-                  .includes(searchTerm.toLowerCase())
-            )
+            (value) =>
+              value &&
+              value
+                .toString()
+                .toLowerCase()
+                .includes(searchTerm.toLowerCase())
+          )
           : true;
         const matchesMember =
           selectedMembers.length > 0
@@ -541,14 +541,14 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
     const memberStats =
       selectedMembers.length > 0
         ? selectedMembers.reduce((stats, member) => {
-            const memberTasks = historyData.filter(
-              (task) => task["col4"] === member
-            ).length;
-            return {
-              ...stats,
-              [member]: memberTasks,
-            };
-          }, {})
+          const memberTasks = historyData.filter(
+            (task) => task["col4"] === member
+          ).length;
+          return {
+            ...stats,
+            [member]: memberTasks,
+          };
+        }, {})
         : {};
     const filteredTotal = filteredHistoryData.length;
     return {
@@ -581,7 +581,7 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
   const fetchSheetData = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       // Fetch Checklist data
       const checklistResponse = await fetch(
         `${CONFIG.APPS_SCRIPT_URL}?sheet=${CONFIG.SHEET_NAME}&action=fetch`
@@ -603,7 +603,7 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
           throw new Error("Invalid JSON response from server");
         }
       }
-  
+
       // Fetch Delegation data
       const delegationResponse = await fetch(
         `${CONFIG.APPS_SCRIPT_URL}?sheet=Delegation&action=fetch`
@@ -625,7 +625,7 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
           throw new Error("Invalid JSON response from server");
         }
       }
-  
+
       const currentUsername = sessionStorage.getItem("username");
       const currentUserRole = sessionStorage.getItem("role");
       const today = new Date();
@@ -633,14 +633,14 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
       tomorrow.setDate(today.getDate() + 1);
       const todayStr = formatDateToDDMMYYYY(today);
       const tomorrowStr = formatDateToDDMMYYYY(tomorrow);
-  
+
       const membersSet = new Set();
-      
+
       // Process Checklist data
       const processSheetData = (data, sheetType) => {
         const historyRows = [];
         let rows = [];
-        
+
         if (data.table && data.table.rows) {
           rows = data.table.rows;
         } else if (Array.isArray(data)) {
@@ -650,7 +650,7 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
             c: row.map((val) => ({ v: val })),
           }));
         }
-  
+
         rows.forEach((row, rowIndex) => {
           if (rowIndex === 0) return;
           let rowValues = [];
@@ -663,41 +663,41 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
           } else {
             return;
           }
-  
+
           const assignedTo = rowValues[4] || "Unassigned";
           membersSet.add(assignedTo);
           const isUserMatch =
             currentUserRole === "admin" ||
             assignedTo.toLowerCase() === currentUsername.toLowerCase();
           if (!isUserMatch && currentUserRole !== "admin") return;
-  
+
           const columnGValue = rowValues[6]; // Task End Date
           const columnKValue = rowValues[10]; // Actual Date
           const columnMValue = rowValues[12]; // Status (DONE)
           const columnPValue = sheetType === 'checklist' ? rowValues[15] : rowValues[19]; // Admin Done column
-  
+
           if (columnMValue && columnMValue.toString().trim() === "DONE") {
             return;
           }
-  
+
           const rowDateStr = columnGValue ? String(columnGValue).trim() : "";
           const formattedRowDate = parseGoogleSheetsDateTime(rowDateStr);
           const googleSheetsRowIndex = rowIndex + 1;
-  
+
           const taskId = rowValues[1] || "";
           const stableId = taskId
             ? `${sheetType}_task_${taskId}_${googleSheetsRowIndex}`
             : `${sheetType}_row_${googleSheetsRowIndex}_${Math.random()
-                .toString(36)
-                .substring(2, 15)}`;
-  
+              .toString(36)
+              .substring(2, 15)}`;
+
           const rowData = {
             _id: stableId,
             _rowIndex: googleSheetsRowIndex,
             _taskId: taskId,
             _sheetType: sheetType,
           };
-  
+
           const columnHeaders = sheetType === 'checklist' ? [
             { id: "col0", label: "Timestamp", type: "string" },
             { id: "col1", label: "Task ID", type: "string" },
@@ -737,7 +737,7 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
             { id: "col18", label: "Column S", type: "string" },
             { id: "col19", label: "Admin Done", type: "string" }, // Column T for Delegation
           ];
-  
+
           columnHeaders.forEach((header, index) => {
             const cellValue = rowValues[index];
             if (
@@ -758,10 +758,10 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
               rowData[header.id] = cellValue !== null ? cellValue : "";
             }
           });
-  
+
           const hasColumnG = !isEmpty(columnGValue);
           const isColumnKEmpty = isEmpty(columnKValue);
-  
+
           // For history, include ALL completed tasks regardless of Column P/T status
           if (hasColumnG && !isColumnKEmpty) {
             const isUserHistoryMatch =
@@ -772,13 +772,13 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
             }
           }
         });
-        
+
         return historyRows;
       };
-  
+
       const checklistHistory = processSheetData(checklistData, 'checklist');
       const delegationHistory = processSheetData(delegationData, 'delegation');
-  
+
       setMembersList(Array.from(membersSet).sort());
       setHistoryData(checklistHistory);
       setDelegationHistoryData(delegationHistory);
@@ -811,812 +811,802 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
   return (
     <AdminLayout>
       <div className="space-y-6">
-      <div className="flex flex-col gap-4">
-  <div>
-    <h1 className="text-2xl font-bold tracking-tight text-purple-700 text-center sm:text-left">
-      {CONFIG.PAGE_CONFIG.historyTitle}
-    </h1>
-    
-    {/* Tab Buttons */}
-    <div className="flex gap-2 mt-2">
-      <button
-        onClick={() => setActiveApprovalTab('checklist')}
-        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-          activeApprovalTab === 'checklist'
-            ? 'bg-purple-600 text-white'
-            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-        }`}
-      >
-        Checklist Tasks
-      </button>
-      <button
-        onClick={() => setActiveApprovalTab('delegation')}
-        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-          activeApprovalTab === 'delegation'
-            ? 'bg-purple-600 text-white'
-            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-        }`}
-      >
-        Delegation Tasks
-      </button>
-    </div>
-  </div>
-        
+        <div className="flex flex-col gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-purple-700 text-center sm:text-left">
+              {CONFIG.PAGE_CONFIG.historyTitle}
+            </h1>
 
-        {successMessage && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md flex items-center justify-between">
-            <div className="flex items-center">
-              <CheckCircle2 className="h-5 w-5 mr-2 text-green-500" />
-              {successMessage}
-            </div>
-            <button
-              onClick={() => setSuccessMessage("")}
-              className="text-green-500 hover:text-green-700"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-        )}
-
-        <div className="rounded-lg border border-purple-200 shadow-md bg-white overflow-hidden">
-          <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100 p-4">
-            <h2 className="text-purple-700 font-medium">
-              {`Completed ${CONFIG.SHEET_NAME} Tasks`}
-            </h2>
-            <p className="text-purple-600 text-sm">
-              {`${CONFIG.PAGE_CONFIG.historyDescription} for ${
-                userRole === "admin" ? "all" : "your"
-              } tasks`}
-            </p>
-          </div>
-
-          {loading ? (
-            <div className="text-center py-10">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500 mb-4"></div>
-              <p className="text-purple-600">Loading task data...</p>
-            </div>
-          ) : error ? (
-            <div className="bg-red-50 p-4 rounded-md text-red-800 text-center">
-              {error}{" "}
+            {/* Tab Buttons */}
+            <div className="flex gap-2 mt-2">
               <button
-                className="underline ml-2"
-                onClick={() => window.location.reload()}
+                onClick={() => setActiveApprovalTab('checklist')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeApprovalTab === 'checklist'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
               >
-                Try again
+                Checklist Tasks
+              </button>
+              <button
+                onClick={() => setActiveApprovalTab('delegation')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeApprovalTab === 'delegation'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+              >
+                Delegation Tasks
               </button>
             </div>
-          ) : (
-            <>
-              {/* History Filters */}
-              <div className="p-4 border-b border-purple-100 bg-gray-50">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  
+          </div>
 
-                  {getFilteredMembersList().length > 0 && userRole === "admin" && (
-                    <div className="flex flex-col">
-                      <div className="mb-2 flex items-center">
-                        <span className="text-sm font-medium text-purple-700">
-                          Filter by Member:
-                        </span>
-                      </div>
-                      <div className="relative min-w-[250px]">
-                        <div className="relative">
-                          <input
-                            type="text"
-                            placeholder="Search members..."
-                            value={memberSearchTerm}
-                            onChange={(e) =>
-                              setMemberSearchTerm(e.target.value)
-                            }
-                            onFocus={() => setShowMemberDropdown(true)}
-                            className="w-full p-2 pr-8 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                          />
-                          <Search
-                            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400"
-                            size={18}
-                          />
+
+          {successMessage && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md flex items-center justify-between">
+              <div className="flex items-center">
+                <CheckCircle2 className="h-5 w-5 mr-2 text-green-500" />
+                {successMessage}
+              </div>
+              <button
+                onClick={() => setSuccessMessage("")}
+                className="text-green-500 hover:text-green-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          )}
+
+          <div className="rounded-lg border border-purple-200 shadow-md bg-white overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100 p-4">
+              <h2 className="text-purple-700 font-medium">
+                {`Completed ${CONFIG.SHEET_NAME} Tasks`}
+              </h2>
+              <p className="text-purple-600 text-sm">
+                {`${CONFIG.PAGE_CONFIG.historyDescription} for ${userRole === "admin" ? "all" : "your"
+                  } tasks`}
+              </p>
+            </div>
+
+            {loading ? (
+              <div className="text-center py-10">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500 mb-4"></div>
+                <p className="text-purple-600">Loading task data...</p>
+              </div>
+            ) : error ? (
+              <div className="bg-red-50 p-4 rounded-md text-red-800 text-center">
+                {error}{" "}
+                <button
+                  className="underline ml-2"
+                  onClick={() => window.location.reload()}
+                >
+                  Try again
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* History Filters */}
+                <div className="p-4 border-b border-purple-100 bg-gray-50">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+
+
+                    {getFilteredMembersList().length > 0 && userRole === "admin" && (
+                      <div className="flex flex-col">
+                        <div className="mb-2 flex items-center">
+                          <span className="text-sm font-medium text-purple-700">
+                            Filter by Member:
+                          </span>
                         </div>
+                        <div className="relative min-w-[250px]">
+                          <div className="relative">
+                            <input
+                              type="text"
+                              placeholder="Search members..."
+                              value={memberSearchTerm}
+                              onChange={(e) =>
+                                setMemberSearchTerm(e.target.value)
+                              }
+                              onFocus={() => setShowMemberDropdown(true)}
+                              className="w-full p-2 pr-8 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            />
+                            <Search
+                              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400"
+                              size={18}
+                            />
+                          </div>
 
-                        {showMemberDropdown && (
-                          <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                            {getFilteredMembersList()
-                              .filter((member) =>
+                          {showMemberDropdown && (
+                            <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                              {getFilteredMembersList()
+                                .filter((member) =>
+                                  member
+                                    .toLowerCase()
+                                    .includes(memberSearchTerm.toLowerCase())
+                                )
+                                .map((member, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="flex items-center px-3 py-2 hover:bg-purple-50 cursor-pointer"
+                                    onClick={() => handleMemberSelection(member)}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedMembers.includes(member)}
+                                      onChange={() => { }}
+                                      className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 pointer-events-none"
+                                    />
+                                    <label className="ml-2 text-sm text-gray-700 cursor-pointer flex-1">
+                                      {member}
+                                    </label>
+                                  </div>
+                                ))}
+                              {getFilteredMembersList().filter((member) =>
                                 member
                                   .toLowerCase()
                                   .includes(memberSearchTerm.toLowerCase())
-                              )
-                              .map((member, idx) => (
-                                <div
+                              ).length === 0 && (
+                                  <div className="px-3 py-2 text-sm text-gray-500">
+                                    No members found
+                                  </div>
+                                )}
+                            </div>
+                          )}
+
+                          {selectedMembers.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {selectedMembers.map((member, idx) => (
+                                <span
                                   key={idx}
-                                  className="flex items-center px-3 py-2 hover:bg-purple-50 cursor-pointer"
-                                  onClick={() => handleMemberSelection(member)}
+                                  className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-700 rounded-md text-xs"
                                 >
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedMembers.includes(member)}
-                                    onChange={() => {}}
-                                    className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 pointer-events-none"
-                                  />
-                                  <label className="ml-2 text-sm text-gray-700 cursor-pointer flex-1">
-                                    {member}
-                                  </label>
-                                </div>
+                                  {member}
+                                  <button
+                                    onClick={() => handleMemberSelection(member)}
+                                    className="ml-1 text-purple-600 hover:text-purple-800"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </span>
                               ))}
-                            {getFilteredMembersList().filter((member) =>
-                              member
-                                .toLowerCase()
-                                .includes(memberSearchTerm.toLowerCase())
-                            ).length === 0 && (
-                              <div className="px-3 py-2 text-sm text-gray-500">
-                                No members found
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {selectedMembers.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            {selectedMembers.map((member, idx) => (
-                              <span
-                                key={idx}
-                                className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-700 rounded-md text-xs"
-                              >
-                                {member}
-                                <button
-                                  onClick={() => handleMemberSelection(member)}
-                                  className="ml-1 text-purple-600 hover:text-purple-800"
-                                >
-                                  <X size={14} />
-                                </button>
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  <div className="flex flex-col">
-                    <div className="mb-2 flex items-center">
-                      <span className="text-sm font-medium text-purple-700">
-                        Filter by Date Range:
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center">
-                        <label
-                          htmlFor="start-date"
-                          className="text-sm text-gray-700 mr-1"
-                        >
-                          From
-                        </label>
-                        <input
-                          id="start-date"
-                          type="date"
-                          value={startDate}
-                          onChange={(e) => setStartDate(e.target.value)}
-                          className="text-sm border border-gray-200 rounded-md p-1"
-                        />
+                    )}
+                    <div className="flex flex-col">
+                      <div className="mb-2 flex items-center">
+                        <span className="text-sm font-medium text-purple-700">
+                          Filter by Date Range:
+                        </span>
                       </div>
-                      <div className="flex items-center">
-                        <label
-                          htmlFor="end-date"
-                          className="text-sm text-gray-700 mr-1"
-                        >
-                          To
-                        </label>
-                        <input
-                          id="end-date"
-                          type="date"
-                          value={endDate}
-                          onChange={(e) => setEndDate(e.target.value)}
-                          className="text-sm border border-gray-200 rounded-md p-1"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  {(selectedMembers.length > 0 ||
-                    startDate ||
-                    endDate ||
-                    searchTerm) && (
-                    <button
-                      onClick={resetFilters}
-                      className="px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 text-sm"
-                    >
-                      Clear All Filters
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* NEW: Confirmation Modal */}
-              <ConfirmationModal
-                isOpen={confirmationModal.isOpen}
-                itemCount={confirmationModal.itemCount}
-                onConfirm={confirmMarkDone}
-                onCancel={() =>
-                  setConfirmationModal({ isOpen: false, itemCount: 0 })
-                }
-              />
-
-              {/* Task Statistics */}
-              <div className="p-4 border-b border-purple-100 bg-blue-50">
-                <div className="flex flex-col">
-                  <h3 className="text-sm font-medium text-blue-700 mb-2">
-                    Task Completion Statistics:
-                  </h3>
-                  <div className="flex flex-wrap gap-4">
-                    <div className="px-3 py-2 bg-white rounded-md shadow-sm">
-                      <span className="text-xs text-gray-500">
-                        Total Completed
-                      </span>
-                      <div className="text-lg font-semibold text-blue-600">
-                        {getTaskStatistics().totalCompleted}
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center">
+                          <label
+                            htmlFor="start-date"
+                            className="text-sm text-gray-700 mr-1"
+                          >
+                            From
+                          </label>
+                          <input
+                            id="start-date"
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            className="text-sm border border-gray-200 rounded-md p-1"
+                          />
+                        </div>
+                        <div className="flex items-center">
+                          <label
+                            htmlFor="end-date"
+                            className="text-sm text-gray-700 mr-1"
+                          >
+                            To
+                          </label>
+                          <input
+                            id="end-date"
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            className="text-sm border border-gray-200 rounded-md p-1"
+                          />
+                        </div>
                       </div>
                     </div>
                     {(selectedMembers.length > 0 ||
                       startDate ||
                       endDate ||
                       searchTerm) && (
+                        <button
+                          onClick={resetFilters}
+                          className="px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 text-sm"
+                        >
+                          Clear All Filters
+                        </button>
+                      )}
+                  </div>
+                </div>
+
+                {/* NEW: Confirmation Modal */}
+                <ConfirmationModal
+                  isOpen={confirmationModal.isOpen}
+                  itemCount={confirmationModal.itemCount}
+                  onConfirm={confirmMarkDone}
+                  onCancel={() =>
+                    setConfirmationModal({ isOpen: false, itemCount: 0 })
+                  }
+                />
+
+                {/* Task Statistics */}
+                <div className="p-4 border-b border-purple-100 bg-blue-50">
+                  <div className="flex flex-col">
+                    <h3 className="text-sm font-medium text-blue-700 mb-2">
+                      Task Completion Statistics:
+                    </h3>
+                    <div className="flex flex-wrap gap-4">
                       <div className="px-3 py-2 bg-white rounded-md shadow-sm">
                         <span className="text-xs text-gray-500">
-                          Filtered Results
+                          Total Completed
                         </span>
                         <div className="text-lg font-semibold text-blue-600">
-                          {getTaskStatistics().filteredTotal}
+                          {getTaskStatistics().totalCompleted}
                         </div>
                       </div>
-                    )}
-                    {selectedMembers.map((member) => (
-                      <div
-                        key={member}
-                        className="px-3 py-2 bg-white rounded-md shadow-sm"
-                      >
-                        <span className="text-xs text-gray-500">{member}</span>
-                        <div className="text-lg font-semibold text-indigo-600">
-                          {getTaskStatistics().memberStats[member]}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-            {/* History Table - Based on Active Tab */}
-<div className="hidden sm:block h-[calc(100vh-300px)] overflow-auto">
-  <table className="min-w-full divide-y divide-gray-200">
-    <thead className="bg-gray-50 sticky top-0 z-10">
-      <tr>
-        {/* Admin Done Column - NOW FIRST */}
-        {userRole === "admin" && (
-          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 min-w-[160px]">
-            Admin Done
-          </th>
-        )}
-
-        {/* Admin Select Column Header */}
-        {userRole === "admin" && (
-          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
-            <div className="flex flex-col items-center">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
-                checked={
-                  (activeApprovalTab === 'checklist' ? filteredHistoryData : filteredDelegationHistoryData).filter(
-                    (item) => {
-                      const adminDoneColumn = item._sheetType === 'delegation' ? 'col19' : 'col15';
-                      return isEmpty(item[adminDoneColumn]) ||
-                        (item[adminDoneColumn].toString().trim() !== "Done" &&
-                         item[adminDoneColumn].toString().trim() !== "Not Done");
-                    }
-                  ).length > 0 &&
-                  selectedHistoryItems.length ===
-                    (activeApprovalTab === 'checklist' ? filteredHistoryData : filteredDelegationHistoryData).filter(
-                      (item) => {
-                        const adminDoneColumn = item._sheetType === 'delegation' ? 'col19' : 'col15';
-                        return isEmpty(item[adminDoneColumn]) ||
-                          (item[adminDoneColumn].toString().trim() !== "Done" &&
-                           item[adminDoneColumn].toString().trim() !== "Not Done");
-                      }
-                    ).length
-                }
-                onChange={(e) => {
-                  const currentData = activeApprovalTab === 'checklist' ? filteredHistoryData : filteredDelegationHistoryData;
-                  const unprocessedItems = currentData.filter((item) => {
-                    const adminDoneColumn = item._sheetType === 'delegation' ? 'col19' : 'col15';
-                    return isEmpty(item[adminDoneColumn]) ||
-                      (item[adminDoneColumn].toString().trim() !== "Done" &&
-                       item[adminDoneColumn].toString().trim() !== "Not Done");
-                  });
-                  if (e.target.checked) {
-                    setSelectedHistoryItems(unprocessedItems);
-                  } else {
-                    setSelectedHistoryItems([]);
-                  }
-                }}
-              />
-              <span className="text-xs text-gray-400 mt-1">Admin</span>
-            </div>
-          </th>
-        )}
-
-        {/* Hide Task ID column for admin in history view */}
-        {userRole !== "admin" && (
-          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
-            Task ID
-          </th>
-        )}
-
-        {/* Hide Department Name column for admin in history view */}
-        {userRole !== "admin" && isAdmin && (
-          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
-            Department Name
-          </th>
-        )}
-
-        {/* Hide Given By column for admin in history view */}
-        {userRole !== "admin" && isAdmin && (
-          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
-            Given By
-          </th>
-        )}
-
-        {/* Hide Name column for admin in history view */}
-        {userRole !== "admin" && isAdmin && (
-          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
-            Name
-          </th>
-        )}
-        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
-          Task Description
-        </th>
-        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-yellow-50 min-w-[140px]">
-          Task End Date & Time
-        </th>
-        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px]">
-          Freq
-        </th>
-        {/* Hide Enable Reminders column for admin in history view */}
-        {userRole !== "admin" && isAdmin && (
-          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
-            Enable Reminders
-          </th>
-        )}
-        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
-          Require Attachment
-        </th>
-        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-green-50 min-w-[140px]">
-          Actual Date & Time
-        </th>
-        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-50 min-w-[80px]">
-          Status
-        </th>
-        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-purple-50 min-w-[150px]">
-          Remarks
-        </th>
-        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
-          Attachment
-        </th>
-      </tr>
-    </thead>
-    <tbody className="bg-white divide-y divide-gray-200">
-      {loading ? (
-        <tr>
-          <td 
-            colSpan={
-              (userRole === "admin" ? 2 : 0) + // Admin Done + Admin checkbox columns
-              (userRole !== "admin" ? 1 : 0) + // Task ID column
-              (userRole !== "admin" && isAdmin ? 3 : 0) + // Department, Given By, Name columns
-              7 + // Fixed columns (Task Description, End Date, Freq, Require Attachment, Actual Date, Status, Remarks, Attachment)
-              (userRole !== "admin" && isAdmin ? 1 : 0) // Enable Reminders column
-            }
-            className="px-6 py-8 text-center"
-          >
-            <div className="flex flex-col items-center justify-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500 mb-2"></div>
-              <p className="text-purple-600">Loading task data...</p>
-            </div>
-          </td>
-        </tr>
-      ) : (activeApprovalTab === 'checklist' ? filteredHistoryData : filteredDelegationHistoryData).length > 0 ? (
-        (activeApprovalTab === 'checklist' ? filteredHistoryData : filteredDelegationHistoryData).map((history) => {
-          const isInEditMode = editingRows.has(history._id);
-          const isSaving = savingEdits.has(history._id);
-          const adminDoneColumn = history._sheetType === 'delegation' ? 'col19' : 'col15';
-
-          return (
-            <tr key={history._id} className="hover:bg-gray-50">
-              {/* FIRST: Admin Done Column with Edit functionality */}
-              {userRole === "admin" && (
-                <td className="px-3 py-4 bg-gray-50 min-w-[160px]">
-                  {isInEditMode ? (
-                    <div className="flex items-center space-x-2">
-                      <select
-                        value={editedAdminStatus[history._id] || "Not Done"}
-                        onChange={(e) =>
-                          setEditedAdminStatus((prev) => ({
-                            ...prev,
-                            [history._id]: e.target.value,
-                          }))
-                        }
-                        className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        disabled={isSaving}
-                      >
-                        <option value="Not Done">Not Done</option>
-                        <option value="Done">Done</option>
-                      </select>
-                      <div className="flex space-x-1">
-                        <button
-                          onClick={() => handleSaveEdit(history)}
-                          disabled={isSaving}
-                          className="p-1 text-green-600 hover:text-green-800 disabled:opacity-50"
-                          title="Save changes"
-                        >
-                          {isSaving ? (
-                            <div className="animate-spin h-4 w-4 border-2 border-green-600 border-t-transparent rounded-full"></div>
-                          ) : (
-                            <Save className="h-4 w-4" />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => handleCancelEdit(history._id)}
-                          disabled={isSaving}
-                          className="p-1 text-red-600 hover:text-red-800 disabled:opacity-50"
-                          title="Cancel editing"
-                        >
-                          <XCircle className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between">
-                      <div>
-                        {!isEmpty(history[adminDoneColumn]) &&
-                        history[adminDoneColumn].toString().trim() === "Done" ? (
-                          <div className="flex items-center">
-                            <div className="h-4 w-4 rounded border-gray-300 text-green-600 bg-green-100 mr-2 flex items-center justify-center">
-                              <span className="text-xs text-green-600">✓</span>
+                      {(selectedMembers.length > 0 ||
+                        startDate ||
+                        endDate ||
+                        searchTerm) && (
+                          <div className="px-3 py-2 bg-white rounded-md shadow-sm">
+                            <span className="text-xs text-gray-500">
+                              Filtered Results
+                            </span>
+                            <div className="text-lg font-semibold text-blue-600">
+                              {getTaskStatistics().filteredTotal}
                             </div>
-                            <div className="flex flex-col">
-                              <div className="font-medium text-green-700 text-sm">Done</div>
-                            </div>
-                          </div>
-                        ) : !isEmpty(history[adminDoneColumn]) &&
-                          history[adminDoneColumn].toString().trim() === "Not Done" ? (
-                          <div className="flex items-center text-red-500 text-sm">
-                            <div className="h-4 w-4 rounded border-gray-300 bg-red-100 mr-2 flex items-center justify-center">
-                              <span className="text-xs text-red-600">✗</span>
-                            </div>
-                            <span className="font-medium">Not Done</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center text-gray-400 text-sm">
-                            <div className="h-4 w-4 rounded border-gray-300 mr-2"></div>
-                            <span>Pending</span>
                           </div>
                         )}
-                      </div>
-                      <button
-                        onClick={() => handleEditClick(history)}
-                        className="p-1 text-blue-600 hover:text-blue-800 ml-2"
-                        title="Edit admin status"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                    </div>
-                  )}
-                </td>
-              )}
-
-              {/* SECOND: Admin Select Checkbox */}
-              {userRole === "admin" && (
-                <td className="px-3 py-4 w-12">
-                  {!isEmpty(history[adminDoneColumn]) &&
-                  (history[adminDoneColumn].toString().trim() === "Done" ||
-                    history[adminDoneColumn].toString().trim() === "Not Done") ? (
-                    <div className="flex flex-col items-center">
-                      <div
-                        className={`h-4 w-4 rounded border-gray-300 ${
-                          history[adminDoneColumn].toString().trim() === "Done"
-                            ? "text-green-600 bg-green-100"
-                            : "text-red-600 bg-red-100"
-                        }`}
-                      >
-                        <span
-                          className={`text-xs ${
-                            history[adminDoneColumn].toString().trim() === "Done"
-                              ? "text-green-600"
-                              : "text-red-600"
-                          }`}
+                      {selectedMembers.map((member) => (
+                        <div
+                          key={member}
+                          className="px-3 py-2 bg-white rounded-md shadow-sm"
                         >
-                          {history[adminDoneColumn].toString().trim() === "Done" ? "✓" : "✗"}
-                        </span>
-                      </div>
-                      <span
-                        className={`text-xs mt-1 text-center break-words ${
-                          history[adminDoneColumn].toString().trim() === "Done"
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }`}
-                      >
-                        {history[adminDoneColumn].toString().trim()}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
-                        checked={selectedHistoryItems.some(item => item._id === history._id)}
-                        onChange={() => {
-                          setSelectedHistoryItems(prev =>
-                            prev.some(item => item._id === history._id)
-                              ? prev.filter(item => item._id !== history._id)
-                              : [...prev, history]
-                          );
-                        }}
-                      />
-                      <span className="text-xs text-gray-400 mt-1 text-center break-words">
-                        Mark Done
-                      </span>
-                    </div>
-                  )}
-                </td>
-              )}
-
-              {/* Rest of the columns - Task ID, Department, etc. */}
-              {userRole !== "admin" && (
-                <td className="px-3 py-4 min-w-[100px]">
-                  <div className="text-sm font-medium text-gray-900 break-words">
-                    {history["col1"] || "—"}
-                  </div>
-                </td>
-              )}
-
-              {userRole !== "admin" && isAdmin && (
-                <td className="px-3 py-4 min-w-[120px]">
-                  <div className="text-sm text-gray-900 break-words">
-                    {history["col2"] || "—"}
-                  </div>
-                </td>
-              )}
-
-              {userRole !== "admin" && isAdmin && (
-                <td className="px-3 py-4 min-w-[100px]">
-                  <div className="text-sm text-gray-900 break-words">
-                    {history["col3"] || "—"}
-                  </div>
-                </td>
-              )}
-
-              {userRole !== "admin" && isAdmin && (
-                <td className="px-3 py-4 min-w-[100px]">
-                  <div className="text-sm text-gray-900 break-words">
-                    {history["col4"] || "—"}
-                  </div>
-                </td>
-              )}
-              
-              <td className="px-3 py-4 min-w-[200px]">
-                <div className="text-sm text-gray-900 break-words" title={history["col5"]}>
-                  {history["col5"] || "—"}
-                </div>
-              </td>
-              
-              <td className="px-3 py-4 bg-yellow-50 min-w-[140px]">
-                <div className="text-sm text-gray-900 break-words">
-                  {history["col6"] ? (
-                    <div>
-                      <div className="font-medium break-words">
-                        {history["col6"].includes(" ") ? history["col6"].split(" ")[0] : history["col6"]}
-                      </div>
-                      {history["col6"].includes(" ") && (
-                        <div className="text-xs text-gray-500 break-words">
-                          {history["col6"].split(" ")[1]}
+                          <span className="text-xs text-gray-500">{member}</span>
+                          <div className="text-lg font-semibold text-indigo-600">
+                            {getTaskStatistics().memberStats[member]}
+                          </div>
                         </div>
-                      )}
+                      ))}
                     </div>
-                  ) : (
-                    "—"
-                  )}
-                </div>
-              </td>
-              
-              <td className="px-3 py-4 min-w-[80px]">
-                <div className="text-sm text-gray-900 break-words">
-                  {history["col7"] || "—"}
-                </div>
-              </td>
-              
-              {userRole !== "admin" && isAdmin && (
-                <td className="px-3 py-4 min-w-[120px]">
-                  <div className="text-sm text-gray-900 break-words">
-                    {history["col8"] || "—"}
                   </div>
-                </td>
-              )}
-              
-              <td className="px-3 py-4 min-w-[120px]">
-                <div className="text-sm text-gray-900 break-words">
-                  {history["col9"] || "—"}
                 </div>
-              </td>
-              
-              <td className="px-3 py-4 bg-green-50 min-w-[140px]">
-                <div className="text-sm text-gray-900 break-words">
-                  {history["col10"] ? (
-                    <div>
-                      <div className="font-medium break-words">
-                        {history["col10"].includes(" ") ? history["col10"].split(" ")[0] : history["col10"]}
-                      </div>
-                      {history["col10"].includes(" ") && (
-                        <div className="text-xs text-gray-500 break-words">
-                          {history["col10"].split(" ")[1]}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    "—"
-                  )}
-                </div>
-              </td>
-              
-              <td className="px-3 py-4 bg-blue-50 min-w-[80px]">
-                <span
-                  className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full break-words ${
-                    history["col12"] === "Yes"
-                      ? "bg-green-100 text-green-800"
-                      : history["col12"] === "No"
-                      ? "bg-red-100 text-red-800"
-                      : "bg-gray-100 text-gray-800"
-                  }`}
-                >
-                  {history["col12"] || "—"}
-                </span>
-              </td>
-              
-              <td className="px-3 py-4 bg-purple-50 min-w-[150px]">
-                <div className="text-sm text-gray-900 break-words" title={history["col13"]}>
-                  {history["col13"] || "—"}
-                </div>
-              </td>
-              
-              <td className="px-3 py-4 min-w-[100px]">
-                {(() => {
-                  const attachmentCol = history._sheetType === 'delegation' ? history["col15"] : history["col14"];
-                  return attachmentCol ? (
-                    <a href={attachmentCol}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 underline flex items-center break-words"
-                    >
-                      {/* <img
+
+                {/* History Table - Based on Active Tab */}
+                <div className="hidden sm:block h-[calc(100vh-300px)] overflow-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50 sticky top-0 z-10">
+                      <tr>
+                        {/* Admin Done Column - NOW FIRST */}
+                        {userRole === "admin" && (
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 min-w-[160px]">
+                            Admin Done
+                          </th>
+                        )}
+
+                        {/* Admin Select Column Header */}
+                        {userRole === "admin" && (
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                            <div className="flex flex-col items-center">
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                                checked={
+                                  (activeApprovalTab === 'checklist' ? filteredHistoryData : filteredDelegationHistoryData).filter(
+                                    (item) => {
+                                      const adminDoneColumn = item._sheetType === 'delegation' ? 'col19' : 'col15';
+                                      return isEmpty(item[adminDoneColumn]) ||
+                                        (item[adminDoneColumn].toString().trim() !== "Done" &&
+                                          item[adminDoneColumn].toString().trim() !== "Not Done");
+                                    }
+                                  ).length > 0 &&
+                                  selectedHistoryItems.length ===
+                                  (activeApprovalTab === 'checklist' ? filteredHistoryData : filteredDelegationHistoryData).filter(
+                                    (item) => {
+                                      const adminDoneColumn = item._sheetType === 'delegation' ? 'col19' : 'col15';
+                                      return isEmpty(item[adminDoneColumn]) ||
+                                        (item[adminDoneColumn].toString().trim() !== "Done" &&
+                                          item[adminDoneColumn].toString().trim() !== "Not Done");
+                                    }
+                                  ).length
+                                }
+                                onChange={(e) => {
+                                  const currentData = activeApprovalTab === 'checklist' ? filteredHistoryData : filteredDelegationHistoryData;
+                                  const unprocessedItems = currentData.filter((item) => {
+                                    const adminDoneColumn = item._sheetType === 'delegation' ? 'col19' : 'col15';
+                                    return isEmpty(item[adminDoneColumn]) ||
+                                      (item[adminDoneColumn].toString().trim() !== "Done" &&
+                                        item[adminDoneColumn].toString().trim() !== "Not Done");
+                                  });
+                                  if (e.target.checked) {
+                                    setSelectedHistoryItems(unprocessedItems);
+                                  } else {
+                                    setSelectedHistoryItems([]);
+                                  }
+                                }}
+                              />
+                              <span className="text-xs text-gray-400 mt-1">Admin</span>
+                            </div>
+                          </th>
+                        )}
+
+                        {/* Hide Task ID column for admin in history view */}
+                        {userRole !== "admin" && (
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
+                            Task ID
+                          </th>
+                        )}
+
+                        {/* Hide Department Name column for admin in history view */}
+                        {userRole !== "admin" && isAdmin && (
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+                            Department Name
+                          </th>
+                        )}
+
+                        {/* Hide Given By column for admin in history view */}
+                        {userRole !== "admin" && isAdmin && (
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
+                            Given By
+                          </th>
+                        )}
+
+                        {/* Hide Name column for admin in history view */}
+                        {userRole !== "admin" && isAdmin && (
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
+                            Name
+                          </th>
+                        )}
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
+                          Task Description
+                        </th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-yellow-50 min-w-[140px]">
+                          Task End Date & Time
+                        </th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px]">
+                          Freq
+                        </th>
+                        {/* Hide Enable Reminders column for admin in history view */}
+                        {userRole !== "admin" && isAdmin && (
+                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+                            Enable Reminders
+                          </th>
+                        )}
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+                          Require Attachment
+                        </th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-green-50 min-w-[140px]">
+                          Actual Date & Time
+                        </th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-50 min-w-[80px]">
+                          Status
+                        </th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-purple-50 min-w-[150px]">
+                          Remarks
+                        </th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
+                          Attachment
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {loading ? (
+                        <tr>
+                          <td
+                            colSpan={
+                              (userRole === "admin" ? 2 : 0) + // Admin Done + Admin checkbox columns
+                              (userRole !== "admin" ? 1 : 0) + // Task ID column
+                              (userRole !== "admin" && isAdmin ? 3 : 0) + // Department, Given By, Name columns
+                              7 + // Fixed columns (Task Description, End Date, Freq, Require Attachment, Actual Date, Status, Remarks, Attachment)
+                              (userRole !== "admin" && isAdmin ? 1 : 0) // Enable Reminders column
+                            }
+                            className="px-6 py-8 text-center"
+                          >
+                            <div className="flex flex-col items-center justify-center">
+                              <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500 mb-2"></div>
+                              <p className="text-purple-600">Loading task data...</p>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (activeApprovalTab === 'checklist' ? filteredHistoryData : filteredDelegationHistoryData).length > 0 ? (
+                        (activeApprovalTab === 'checklist' ? filteredHistoryData : filteredDelegationHistoryData).map((history) => {
+                          const isInEditMode = editingRows.has(history._id);
+                          const isSaving = savingEdits.has(history._id);
+                          const adminDoneColumn = history._sheetType === 'delegation' ? 'col19' : 'col15';
+
+                          return (
+                            <tr key={history._id} className="hover:bg-gray-50">
+                              {/* FIRST: Admin Done Column with Edit functionality */}
+                              {userRole === "admin" && (
+                                <td className="px-3 py-4 bg-gray-50 min-w-[160px]">
+                                  {isInEditMode ? (
+                                    <div className="flex items-center space-x-2">
+                                      <select
+                                        value={editedAdminStatus[history._id] || "Not Done"}
+                                        onChange={(e) =>
+                                          setEditedAdminStatus((prev) => ({
+                                            ...prev,
+                                            [history._id]: e.target.value,
+                                          }))
+                                        }
+                                        className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        disabled={isSaving}
+                                      >
+                                        <option value="Not Done">Not Done</option>
+                                        <option value="Done">Done</option>
+                                      </select>
+                                      <div className="flex space-x-1">
+                                        <button
+                                          onClick={() => handleSaveEdit(history)}
+                                          disabled={isSaving}
+                                          className="p-1 text-green-600 hover:text-green-800 disabled:opacity-50"
+                                          title="Save changes"
+                                        >
+                                          {isSaving ? (
+                                            <div className="animate-spin h-4 w-4 border-2 border-green-600 border-t-transparent rounded-full"></div>
+                                          ) : (
+                                            <Save className="h-4 w-4" />
+                                          )}
+                                        </button>
+                                        <button
+                                          onClick={() => handleCancelEdit(history._id)}
+                                          disabled={isSaving}
+                                          className="p-1 text-red-600 hover:text-red-800 disabled:opacity-50"
+                                          title="Cancel editing"
+                                        >
+                                          <XCircle className="h-4 w-4" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        {!isEmpty(history[adminDoneColumn]) &&
+                                          history[adminDoneColumn].toString().trim() === "Done" ? (
+                                          <div className="flex items-center">
+                                            <div className="h-4 w-4 rounded border-gray-300 text-green-600 bg-green-100 mr-2 flex items-center justify-center">
+                                              <span className="text-xs text-green-600">✓</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                              <div className="font-medium text-green-700 text-sm">Done</div>
+                                            </div>
+                                          </div>
+                                        ) : !isEmpty(history[adminDoneColumn]) &&
+                                          history[adminDoneColumn].toString().trim() === "Not Done" ? (
+                                          <div className="flex items-center text-red-500 text-sm">
+                                            <div className="h-4 w-4 rounded border-gray-300 bg-red-100 mr-2 flex items-center justify-center">
+                                              <span className="text-xs text-red-600">✗</span>
+                                            </div>
+                                            <span className="font-medium">Not Done</span>
+                                          </div>
+                                        ) : (
+                                          <div className="flex items-center text-gray-400 text-sm">
+                                            <div className="h-4 w-4 rounded border-gray-300 mr-2"></div>
+                                            <span>Pending</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                      <button
+                                        onClick={() => handleEditClick(history)}
+                                        className="p-1 text-blue-600 hover:text-blue-800 ml-2"
+                                        title="Edit admin status"
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  )}
+                                </td>
+                              )}
+
+                              {/* SECOND: Admin Select Checkbox */}
+                              {userRole === "admin" && (
+                                <td className="px-3 py-4 w-12">
+                                  {!isEmpty(history[adminDoneColumn]) &&
+                                    (history[adminDoneColumn].toString().trim() === "Done" ||
+                                      history[adminDoneColumn].toString().trim() === "Not Done") ? (
+                                    <div className="flex flex-col items-center">
+                                      <div
+                                        className={`h-4 w-4 rounded border-gray-300 ${history[adminDoneColumn].toString().trim() === "Done"
+                                            ? "text-green-600 bg-green-100"
+                                            : "text-red-600 bg-red-100"
+                                          }`}
+                                      >
+                                        <span
+                                          className={`text-xs ${history[adminDoneColumn].toString().trim() === "Done"
+                                              ? "text-green-600"
+                                              : "text-red-600"
+                                            }`}
+                                        >
+                                          {history[adminDoneColumn].toString().trim() === "Done" ? "✓" : "✗"}
+                                        </span>
+                                      </div>
+                                      <span
+                                        className={`text-xs mt-1 text-center break-words ${history[adminDoneColumn].toString().trim() === "Done"
+                                            ? "text-green-600"
+                                            : "text-red-600"
+                                          }`}
+                                      >
+                                        {history[adminDoneColumn].toString().trim()}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <div className="flex flex-col items-center">
+                                      <input
+                                        type="checkbox"
+                                        className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                                        checked={selectedHistoryItems.some(item => item._id === history._id)}
+                                        onChange={() => {
+                                          setSelectedHistoryItems(prev =>
+                                            prev.some(item => item._id === history._id)
+                                              ? prev.filter(item => item._id !== history._id)
+                                              : [...prev, history]
+                                          );
+                                        }}
+                                      />
+                                      <span className="text-xs text-gray-400 mt-1 text-center break-words">
+                                        Mark Done
+                                      </span>
+                                    </div>
+                                  )}
+                                </td>
+                              )}
+
+                              {/* Rest of the columns - Task ID, Department, etc. */}
+                              {userRole !== "admin" && (
+                                <td className="px-3 py-4 min-w-[100px]">
+                                  <div className="text-sm font-medium text-gray-900 break-words">
+                                    {history["col1"] || "—"}
+                                  </div>
+                                </td>
+                              )}
+
+                              {userRole !== "admin" && isAdmin && (
+                                <td className="px-3 py-4 min-w-[120px]">
+                                  <div className="text-sm text-gray-900 break-words">
+                                    {history["col2"] || "—"}
+                                  </div>
+                                </td>
+                              )}
+
+                              {userRole !== "admin" && isAdmin && (
+                                <td className="px-3 py-4 min-w-[100px]">
+                                  <div className="text-sm text-gray-900 break-words">
+                                    {history["col3"] || "—"}
+                                  </div>
+                                </td>
+                              )}
+
+                              {userRole !== "admin" && isAdmin && (
+                                <td className="px-3 py-4 min-w-[100px]">
+                                  <div className="text-sm text-gray-900 break-words">
+                                    {history["col4"] || "—"}
+                                  </div>
+                                </td>
+                              )}
+
+                              <td className="px-3 py-4 min-w-[200px]">
+                                <div className="text-sm text-gray-900 break-words" title={history["col5"]}>
+                                  {history["col5"] || "—"}
+                                </div>
+                              </td>
+
+                              <td className="px-3 py-4 bg-yellow-50 min-w-[140px]">
+                                <div className="text-sm text-gray-900 break-words">
+                                  {history["col6"] ? (
+                                    <div>
+                                      <div className="font-medium break-words">
+                                        {history["col6"].includes(" ") ? history["col6"].split(" ")[0] : history["col6"]}
+                                      </div>
+                                      {history["col6"].includes(" ") && (
+                                        <div className="text-xs text-gray-500 break-words">
+                                          {history["col6"].split(" ")[1]}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    "—"
+                                  )}
+                                </div>
+                              </td>
+
+                              <td className="px-3 py-4 min-w-[80px]">
+                                <div className="text-sm text-gray-900 break-words">
+                                  {history["col7"] || "—"}
+                                </div>
+                              </td>
+
+                              {userRole !== "admin" && isAdmin && (
+                                <td className="px-3 py-4 min-w-[120px]">
+                                  <div className="text-sm text-gray-900 break-words">
+                                    {history["col8"] || "—"}
+                                  </div>
+                                </td>
+                              )}
+
+                              <td className="px-3 py-4 min-w-[120px]">
+                                <div className="text-sm text-gray-900 break-words">
+                                  {history["col9"] || "—"}
+                                </div>
+                              </td>
+
+                              <td className="px-3 py-4 bg-green-50 min-w-[140px]">
+                                <div className="text-sm text-gray-900 break-words">
+                                  {history["col10"] ? (
+                                    <div>
+                                      <div className="font-medium break-words">
+                                        {history["col10"].includes(" ") ? history["col10"].split(" ")[0] : history["col10"]}
+                                      </div>
+                                      {history["col10"].includes(" ") && (
+                                        <div className="text-xs text-gray-500 break-words">
+                                          {history["col10"].split(" ")[1]}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    "—"
+                                  )}
+                                </div>
+                              </td>
+
+                              <td className="px-3 py-4 bg-blue-50 min-w-[80px]">
+                                <span
+                                  className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full break-words ${history["col12"] === "Yes"
+                                      ? "bg-green-100 text-green-800"
+                                      : history["col12"] === "No"
+                                        ? "bg-red-100 text-red-800"
+                                        : "bg-gray-100 text-gray-800"
+                                    }`}
+                                >
+                                  {history["col12"] || "—"}
+                                </span>
+                              </td>
+
+                              <td className="px-3 py-4 bg-purple-50 min-w-[150px]">
+                                <div className="text-sm text-gray-900 break-words" title={history["col13"]}>
+                                  {history["col13"] || "—"}
+                                </div>
+                              </td>
+
+                              <td className="px-3 py-4 min-w-[100px]">
+                                {(() => {
+                                  const attachmentCol = history._sheetType === 'delegation' ? history["col15"] : history["col14"];
+                                  return attachmentCol ? (
+                                    <a href={attachmentCol}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:text-blue-800 underline flex items-center break-words"
+                                    >
+                                      {/* <img
                         src={attachmentCol || "/placeholder.svg?height=32&width=32"}
                         alt="Attachment"
                         className="h-8 w-8 object-cover rounded-md mr-2 flex-shrink-0"
                       /> */}
-                      <span className="break-words">View</span>
-                    </a>
-                  ) : (
-                    <span className="text-gray-400">No attachment</span>
-                  );
-                })()}
-              </td>
-            </tr>
-          );
-        })
-      ) : (
-        <tr>
-          <td 
-            colSpan={
-              (userRole === "admin" ? 2 : 0) + // Admin Done + Admin checkbox columns
-              (userRole !== "admin" ? 1 : 0) + // Task ID column
-              (userRole !== "admin" && isAdmin ? 3 : 0) + // Department, Given By, Name columns
-              7 + // Fixed columns
-              (userRole !== "admin" && isAdmin ? 1 : 0) // Enable Reminders column
-            }
-            className="px-6 py-4 text-center text-gray-500"
-          >
-            {searchTerm || selectedMembers.length > 0 || startDate || endDate
-              ? "No historical records matching your filters"
-              : `No completed ${activeApprovalTab} records found`}
-          </td>
-        </tr>
-      )}
-    </tbody>
-  </table>
-</div>
+                                      <span className="break-words">View</span>
+                                    </a>
+                                  ) : (
+                                    <span className="text-gray-400">No attachment</span>
+                                  );
+                                })()}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={
+                              (userRole === "admin" ? 2 : 0) + // Admin Done + Admin checkbox columns
+                              (userRole !== "admin" ? 1 : 0) + // Task ID column
+                              (userRole !== "admin" && isAdmin ? 3 : 0) + // Department, Given By, Name columns
+                              7 + // Fixed columns
+                              (userRole !== "admin" && isAdmin ? 1 : 0) // Enable Reminders column
+                            }
+                            className="px-6 py-4 text-center text-gray-500"
+                          >
+                            {searchTerm || selectedMembers.length > 0 || startDate || endDate
+                              ? "No historical records matching your filters"
+                              : `No completed ${activeApprovalTab} records found`}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
 
-              {/* Mobile Card View */}
-              <div className="sm:hidden space-y-4 p-4 max-h-[calc(100vh-300px)] overflow-auto">
-                {filteredHistoryData.length > 0 ? (
-                  filteredHistoryData.map((history) => {
-                    const isInEditMode = editingRows.has(history._id);
-                    const isSaving = savingEdits.has(history._id);
+                {/* Mobile Card View */}
+                <div className="sm:hidden space-y-4 p-4 max-h-[calc(100vh-300px)] overflow-auto">
+                  {filteredHistoryData.length > 0 ? (
+                    filteredHistoryData.map((history) => {
+                      const isInEditMode = editingRows.has(history._id);
+                      const isSaving = savingEdits.has(history._id);
 
-                    return (
-                      <div
-                        key={history._id}
-                        className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
-                      >
-                        {/* Mobile card content - replicate your table row data here */}
-                        <div className="space-y-3">
-                             {userRole === "admin" && (
-                            <div className="px-3 py-4 w-12">
-                              {!isEmpty(history["col15"]) &&
-                              (history["col15"].toString().trim() === "Done" ||
-                                history["col15"].toString().trim() ===
-                                  "Not Done") ? (
-                                // Already processed - show status only
-                                <div className="flex flex-col items-center">
-                                  <div
-                                    className={`h-4 w-4 rounded border-gray-300 ${
-                                      history["col15"].toString().trim() ===
-                                      "Done"
-                                        ? "text-green-600 bg-green-100"
-                                        : "text-red-600 bg-red-100"
-                                    }`}
-                                  >
+                      return (
+                        <div
+                          key={history._id}
+                          className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+                        >
+                          {/* Mobile card content - replicate your table row data here */}
+                          <div className="space-y-3">
+                            {userRole === "admin" && (
+                              <div className="px-3 py-4 w-12">
+                                {!isEmpty(history["col15"]) &&
+                                  (history["col15"].toString().trim() === "Done" ||
+                                    history["col15"].toString().trim() ===
+                                    "Not Done") ? (
+                                  // Already processed - show status only
+                                  <div className="flex flex-col items-center">
+                                    <div
+                                      className={`h-4 w-4 rounded border-gray-300 ${history["col15"].toString().trim() ===
+                                          "Done"
+                                          ? "text-green-600 bg-green-100"
+                                          : "text-red-600 bg-red-100"
+                                        }`}
+                                    >
+                                      <span
+                                        className={`text-xs ${history["col15"].toString().trim() ===
+                                            "Done"
+                                            ? "text-green-600"
+                                            : "text-red-600"
+                                          }`}
+                                      >
+                                        {history["col15"].toString().trim() ===
+                                          "Done"
+                                          ? "✓"
+                                          : "✗"}
+                                      </span>
+                                    </div>
                                     <span
-                                      className={`text-xs ${
-                                        history["col15"].toString().trim() ===
-                                        "Done"
+                                      className={`text-xs mt-1 text-center break-words ${history["col15"].toString().trim() ===
+                                          "Done"
                                           ? "text-green-600"
                                           : "text-red-600"
-                                      }`}
+                                        }`}
                                     >
-                                      {history["col15"].toString().trim() ===
-                                      "Done"
-                                        ? "✓"
-                                        : "✗"}
+                                      {history["col15"].toString().trim()}
                                     </span>
                                   </div>
-                                  <span
-                                    className={`text-xs mt-1 text-center break-words ${
-                                      history["col15"].toString().trim() ===
-                                      "Done"
-                                        ? "text-green-600"
-                                        : "text-red-600"
-                                    }`}
-                                  >
-                                    {history["col15"].toString().trim()}
-                                  </span>
-                                </div>
-                              ) : (
-                                // Not processed yet - normal selectable checkbox
-                                <div className="flex flex-col items-center">
-                                  <input
-                                    type="checkbox"
-                                    className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
-                                    checked={selectedHistoryItems.some(
-                                      (item) => item._id === history._id
-                                    )}
-                                    onChange={() => {
-                                      setSelectedHistoryItems((prev) =>
-                                        prev.some(
-                                          (item) => item._id === history._id
-                                        )
-                                          ? prev.filter(
+                                ) : (
+                                  // Not processed yet - normal selectable checkbox
+                                  <div className="flex flex-col items-center">
+                                    <input
+                                      type="checkbox"
+                                      className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                                      checked={selectedHistoryItems.some(
+                                        (item) => item._id === history._id
+                                      )}
+                                      onChange={() => {
+                                        setSelectedHistoryItems((prev) =>
+                                          prev.some(
+                                            (item) => item._id === history._id
+                                          )
+                                            ? prev.filter(
                                               (item) => item._id !== history._id
                                             )
-                                          : [...prev, history]
-                                      );
-                                    }}
-                                  />
-                                  <span className="text-xs text-gray-400 mt-1 text-center break-words">
-                                    Mark Done
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          {/* Admin Done Section */}
-                          {userRole === "admin" && (
-                            <div className="flex justify-between items-center border-b pb-2">
-                              <span className="font-medium text-gray-700">
-                                Admin Status:
-                              </span>
-                              {/* Copy your admin status display/editing logic here */}
-                             {isInEditMode ? (
+                                            : [...prev, history]
+                                        );
+                                      }}
+                                    />
+                                    <span className="text-xs text-gray-400 mt-1 text-center break-words">
+                                      Mark Done
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {/* Admin Done Section */}
+                            {userRole === "admin" && (
+                              <div className="flex justify-between items-center border-b pb-2">
+                                <span className="font-medium text-gray-700">
+                                  Admin Status:
+                                </span>
+                                {/* Copy your admin status display/editing logic here */}
+                                {isInEditMode ? (
                                   // Edit mode
                                   <div className="flex items-center space-x-2">
                                     <select
@@ -1666,7 +1656,7 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
                                   <div className="flex items-center justify-between">
                                     <div>
                                       {!isEmpty(history["col15"]) &&
-                                      history["col15"].toString().trim() ===
+                                        history["col15"].toString().trim() ===
                                         "Done" ? (
                                         <div className="flex items-center">
                                           <div className="h-4 w-4 rounded border-gray-300 text-green-600 bg-green-100 mr-2 flex items-center justify-center">
@@ -1682,7 +1672,7 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
                                         </div>
                                       ) : !isEmpty(history["col15"]) &&
                                         history["col15"].toString().trim() ===
-                                          "Not Done" ? (
+                                        "Not Done" ? (
                                         <div className="flex items-center text-red-500 text-sm">
                                           <div className="h-4 w-4 rounded border-gray-300 bg-red-100 mr-2 flex items-center justify-center">
                                             <span className="text-xs text-red-600">
@@ -1709,92 +1699,92 @@ const [activeApprovalTab, setActiveApprovalTab] = useState('checklist');
                                     </button>
                                   </div>
                                 )}
-                            </div>
-                          )}
+                              </div>
+                            )}
 
-                         
 
-                          {/* Task Description */}
-                          <div>
-                            <span className="font-medium text-gray-700">
-                              Task:
-                            </span>
-                            <p className="mt-1 text-gray-900">
-                              {history["col5"] || "—"}
-                            </p>
-                          </div>
 
-                          {/* Dates */}
-                          <div className="grid grid-cols-2 gap-4">
+                            {/* Task Description */}
                             <div>
                               <span className="font-medium text-gray-700">
-                                End Date:
+                                Task:
                               </span>
-                              <p className="text-sm text-gray-900">
-                                {history["col6"] || "—"}
+                              <p className="mt-1 text-gray-900">
+                                {history["col5"] || "—"}
                               </p>
                             </div>
-                            <div>
-                              <span className="font-medium text-gray-700">
-                                Actual Date:
-                              </span>
-                              <p className="text-sm text-gray-900">
-                                {history["col10"] || "—"}
-                              </p>
-                            </div>
-                          </div>
 
-                          {/* Status and Attachment */}
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <span className="font-medium text-gray-700">
-                                Status:
-                              </span>
-                              <p className="text-sm text-gray-900">
-                                {history["col12"] || "—"}
-                              </p>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-700">
-                                Attachment:
-                              </span>
-                              {history["col14"] ? (
-                                <a
-                                  href={history["col14"]}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 text-sm"
-                                >
-                                  View
-                                </a>
-                              ) : (
-                                <span className="text-gray-400 text-sm">
-                                  No attachment
+                            {/* Dates */}
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <span className="font-medium text-gray-700">
+                                  End Date:
                                 </span>
-                              )}
+                                <p className="text-sm text-gray-900">
+                                  {history["col6"] || "—"}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-700">
+                                  Actual Date:
+                                </span>
+                                <p className="text-sm text-gray-900">
+                                  {history["col10"] || "—"}
+                                </p>
+                              </div>
                             </div>
-                          </div>
 
-                          {/* Add more fields as needed for mobile view */}
+                            {/* Status and Attachment */}
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <span className="font-medium text-gray-700">
+                                  Status:
+                                </span>
+                                <p className="text-sm text-gray-900">
+                                  {history["col12"] || "—"}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-700">
+                                  Attachment:
+                                </span>
+                                {history["col14"] ? (
+                                  <a
+                                    href={history["col14"]}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 text-sm"
+                                  >
+                                    View
+                                  </a>
+                                ) : (
+                                  <span className="text-gray-400 text-sm">
+                                    No attachment
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Add more fields as needed for mobile view */}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="text-center text-gray-500 py-8">
-                    {searchTerm ||
-                    selectedMembers.length > 0 ||
-                    startDate ||
-                    endDate
-                      ? "No historical records matching your filters"
-                      : "No completed records found"}
-                  </div>
-                )}
-              </div>
-            </>
-          )}
+                      );
+                    })
+                  ) : (
+                    <div className="text-center text-gray-500 py-8">
+                      {searchTerm ||
+                        selectedMembers.length > 0 ||
+                        startDate ||
+                        endDate
+                        ? "No historical records matching your filters"
+                        : "No completed records found"}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
-      </div>
       </div>
     </AdminLayout>
   );

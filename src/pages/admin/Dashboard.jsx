@@ -79,34 +79,43 @@ export default function AdminDashboard() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    let allTasks = departmentData.allTasks;
+
+    // For checklist mode, only consider tasks that match the card criteria (shouldCount)
+    // for total/completed/pending/overdue popups.
+    // 'upcoming' popup might still need to show tomorrow's tasks.
+    if (dashboardType === "checklist" && type !== 'upcoming' && type !== 'notDone') {
+      allTasks = allTasks.filter(t => t.shouldCount);
+    }
+
     let filteredTasks = [];
 
     if (type === 'total') {
-      filteredTasks = [...departmentData.allTasks];
+      filteredTasks = [...allTasks];
     } else if (type === 'completed') {
-      filteredTasks = departmentData.allTasks.filter(task =>
+      filteredTasks = allTasks.filter(task =>
         task.status === 'completed'
       );
     } else if (type === 'pending') {
       if (dashboardType === 'delegation') {
-        filteredTasks = departmentData.allTasks.filter(task => {
+        filteredTasks = allTasks.filter(task => {
           if (task.status === 'completed') return false;
           return true;
         });
       } else {
-        filteredTasks = departmentData.allTasks.filter(task =>
+        filteredTasks = allTasks.filter(task =>
           task.status !== 'completed'
         );
       }
     } else if (type === 'overdue') {
-      filteredTasks = departmentData.allTasks.filter(task => {
+      filteredTasks = allTasks.filter(task => {
         if (task.status === 'completed') return false;
         const taskDate = parseDateFromDDMMYYYY(task.taskStartDate);
         if (!taskDate) return false;
         return taskDate < today;
       });
     } else if (type === 'notDone') {
-      filteredTasks = departmentData.allTasks.filter(task => {
+      filteredTasks = allTasks.filter(task => {
         const statusColumnValue = task.notDoneStatus;
         return statusColumnValue === 'Not Done' || statusColumnValue === 'not done';
       });
@@ -121,7 +130,7 @@ export default function AdminDashboard() {
       console.log("Today:", today);
       console.log("Tomorrow:", tomorrow);
 
-      filteredTasks = departmentData.allTasks.filter(task => {
+      filteredTasks = allTasks.filter(task => {
         const taskDate = parseDateFromDDMMYYYY(task.taskStartDate);
 
         const isTargetDate = taskDate && (
@@ -373,54 +382,97 @@ export default function AdminDashboard() {
     return dateStr
   }
 
-  // Modified fetch function to support both checklist and delegation
+  // Modified fetch function to support both checklist, delegation and Archieve for checklist total
   const fetchDepartmentData = async () => {
     const sheetName = dashboardType === "delegation" ? "DELEGATION" : "Checklist";
+    const archiveSheetName = "Archieve";
 
     try {
-      console.log(`Fetching data for dashboard type: ${dashboardType}, sheet: ${sheetName}`);
-
-      // FIXED: Use the correct Google Apps Script endpoint
-      // Remove '/gviz/tq' from the URL and use the base exec endpoint
-      const scriptUrl = 'https://script.google.com/macros/s/AKfycbwcmMvtW0SIzCnaVf_b5Z2-RXc6Ujo9i0uJAfwLilw7s3I9CIgBpE8RENgy8abKV08G/exec';
-
-      const response = await fetch(`${scriptUrl}?sheet=${sheetName}`, {
-        method: 'GET',
-        redirect: 'follow', // Follow redirects automatically
-      });
-
-      console.log("Response status:", response.status);
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch ${sheetName} sheet data: ${response.status}`);
+      console.log(`Fetching data for dashboard type: ${dashboardType}, primary sheet: ${sheetName}`);
+      if (dashboardType === "checklist") {
+        console.log(`Also fetching archive data from: ${archiveSheetName}`);
       }
 
-      const text = await response.text();
-      console.log("Response text:", text.substring(0, 200)); // Log first 200 chars
+      // FIXED: Use the correct Google Apps Script endpoint
+      const scriptUrl = 'https://script.google.com/macros/s/AKfycbyaBCq6ZKHhOZBXRp9qw3hqrXh_aIOPvIHh_G41KtzPovhjl-UjEgj75Ok6gwJhrPOX/exec';
 
-      // Try to parse JSON directly first
+      // Prepare fetch calls
+      const fetchPromises = [
+        fetch(`${scriptUrl}?sheet=${sheetName}`, {
+          method: 'GET',
+          redirect: 'follow',
+        })
+      ];
+
+      // If checklist mode, also fetch the Archieve sheet
+      if (dashboardType === "checklist") {
+        fetchPromises.push(
+          fetch(`${scriptUrl}?sheet=${archiveSheetName}`, {
+            method: 'GET',
+            redirect: 'follow',
+          })
+        );
+      }
+
+      const responses = await Promise.all(fetchPromises);
+
+      // Check if primary fetch was successful
+      if (!responses[0].ok) {
+        throw new Error(`Failed to fetch ${sheetName} sheet data: ${responses[0].status}`);
+      }
+
+      const text = await responses[0].text();
+
+      // Try to parse primary JSON
       let data;
       try {
         data = JSON.parse(text);
       } catch (e) {
-        // If direct parse fails, try extracting JSON from JSONP response
         const jsonStart = text.indexOf('{');
         const jsonEnd = text.lastIndexOf('}');
-
         if (jsonStart === -1 || jsonEnd === -1) {
-          throw new Error('Invalid response format: No JSON found');
+          throw new Error('Invalid response format: No JSON found in primary data');
         }
-
         const jsonString = text.substring(jsonStart, jsonEnd + 1);
         data = JSON.parse(jsonString);
       }
 
-      // Validate data structure
       if (!data || !data.table || !data.table.rows) {
-        throw new Error('Invalid data structure received from Google Sheets');
+        throw new Error('Invalid data structure received from Google Sheets (Primary)');
       }
 
-      console.log("Data parsed successfully, rows:", data.table.rows.length);
+      // Handle archive data if in checklist mode
+      let archiveTotalCount = 0;
+      let archiveData = null;
+
+      if (dashboardType === "checklist" && responses[1]) {
+        try {
+          if (responses[1].ok) {
+            const archiveText = await responses[1].text();
+            try {
+              archiveData = JSON.parse(archiveText);
+            } catch (e) {
+              const jsonStart = archiveText.indexOf('{');
+              const jsonEnd = archiveText.lastIndexOf('}');
+              if (jsonStart !== -1 && jsonEnd !== -1) {
+                const jsonString = archiveText.substring(jsonStart, jsonEnd + 1);
+                archiveData = JSON.parse(jsonString);
+              }
+            }
+
+            if (archiveData && archiveData.table && archiveData.table.rows) {
+              // Subtract 1 for header row if there are rows
+              archiveTotalCount = Math.max(0, archiveData.table.rows.length - 1);
+              console.log("Archive rows count:", archiveTotalCount);
+            }
+          }
+        } catch (archiveErr) {
+          console.error("Error processing archive data:", archiveErr);
+          // Don't fail the whole fetch if archive fails
+        }
+      }
+
+      console.log("Primary data parsed successfully, rows:", data.table.rows.length);
 
       // Get current user details
       const username = sessionStorage.getItem('username');
@@ -472,11 +524,19 @@ export default function AdminDashboard() {
       tomorrow.setDate(tomorrow.getDate() + 1);
       tomorrow.setHours(0, 0, 0, 0);
 
-      // Process row data
-      const processedRows = data.table.rows.map((row, rowIndex) => {
-        // Skip header row
-        if (rowIndex === 0) return null;
+      // Archive data rows
+      let archiveRows = (dashboardType === "checklist" && archiveData && archiveData.table && archiveData.table.rows)
+        ? archiveData.table.rows.slice(1) // Skip archive header
+        : [];
 
+      // Combine primary rows (skipping header) and archive rows
+      const allSourceRows = [
+        ...data.table.rows.slice(1).map(r => ({ row: r, isArchive: false })),
+        ...archiveRows.map(r => ({ row: r, isArchive: true }))
+      ];
+
+      // Process all rows
+      const processedRows = allSourceRows.map(({ row, isArchive }) => {
         // For non-admin users, filter by username in Column E (index 4) - "Name"
         const assignedTo = getCellValue(row, 4) || 'Unassigned';
         const isUserMatch = userRole === 'admin' ||
@@ -489,8 +549,6 @@ export default function AdminDashboard() {
 
         // Check column B for valid task row - "Task ID"
         const taskId = getCellValue(row, 1); // Column B (index 1)
-
-        // FIXED: Removed console.log("ram", ram) - this was causing errors
 
         // More lenient validation - allow any non-empty value as task ID
         if (taskId === null || taskId === undefined || taskId === '' ||
@@ -505,33 +563,27 @@ export default function AdminDashboard() {
         let taskStartDateValue = getCellValue(row, 6);
         const taskStartDate = taskStartDateValue ? parseGoogleSheetsDate(String(taskStartDateValue)) : '';
 
-        // UPDATED: Different date filtering logic for delegation vs checklist
+        // Date filtering logic
         if (dashboardType === "delegation") {
-          // FIXED: Removed console.log("ram", ram)
-          // For DELEGATION mode: Process ALL tasks with valid task IDs, no date filtering
-          if (!taskId || taskId === null || taskId === undefined || taskId === '' ||
-            (typeof taskId === 'string' && taskId.trim() === '')) {
-            return null;
-          }
+          // Process ALL tasks for delegation
         } else {
-          // FIXED: Removed console.log("ram", ram)
-          // For CHECKLIST mode: Keep existing date filtering logic
-          const taskStartDateObj = parseDateFromDDMMYYYY(taskStartDate);
-
-          // Process tasks that have a valid End Date and are due up to tomorrow
-          if (!taskStartDateObj || taskStartDateObj > tomorrow) {
-            return null; // Skip tasks beyond tomorrow
+          // For CHECKLIST mode:
+          // Archive tasks are always processed. 
+          // Regular checklist tasks are processed if due up to tomorrow.
+          if (!isArchive) {
+            const taskStartDateObj = parseDateFromDDMMYYYY(taskStartDate);
+            if (!taskStartDateObj || taskStartDateObj > tomorrow) {
+              return null; // Skip future checklist tasks
+            }
           }
         }
 
         // Get completion data based on dashboard type
         let completionDateValue, completionDate;
         if (dashboardType === "delegation") {
-          // For delegation: Column L (index 11) - "Actual"
-          completionDateValue = getCellValue(row, 11);
+          completionDateValue = getCellValue(row, 11); // Column L
         } else {
-          // For checklist: Column K (index 10) - "Actual"
-          completionDateValue = getCellValue(row, 10);
+          completionDateValue = getCellValue(row, 10); // Column K
         }
 
         completionDate = completionDateValue ? parseGoogleSheetsDate(String(completionDateValue)) : '';
@@ -553,7 +605,6 @@ export default function AdminDashboard() {
 
         // Determine task status
         let status = 'pending';
-
         if (completionDate && completionDate !== '') {
           status = 'completed';
         } else if (isDateInPast(taskStartDate) && !isDateToday(taskStartDate)) {
@@ -564,6 +615,20 @@ export default function AdminDashboard() {
 
         const department = getCellValue(row, 2) || "";
 
+        // Count logic
+        let shouldCountInStats = false;
+        if (dashboardType === "delegation") {
+          shouldCountInStats = true;
+        } else {
+          // For checklist: count archive tasks ALWAYS, or checklist tasks due <= today
+          if (isArchive) {
+            shouldCountInStats = true;
+          } else {
+            const taskStartDateObj = parseDateFromDDMMYYYY(taskStartDate);
+            shouldCountInStats = (taskStartDateObj && taskStartDateObj <= today);
+          }
+        }
+
         // Create the task object
         const taskObj = {
           id: taskIdStr,
@@ -573,31 +638,29 @@ export default function AdminDashboard() {
           taskStartDate,
           dueDate: taskStartDate,
           status,
-          frequency
+          frequency,
+          isArchive,
+          shouldCount: shouldCountInStats
         };
 
-        // Update staff member totals
+        // Update stats
         const staffData = staffTrackingMap.get(assignedTo);
-        staffData.totalTasks++;
 
-        // Count for dashboard cards
-        if (dashboardType === "delegation") {
-          // For DELEGATION mode: Count ALL valid tasks
+        if (shouldCountInStats) {
           totalTasks++;
+          staffData.totalTasks++;
 
           if (status === 'completed') {
             completedTasks++;
             staffData.completedTasks++;
             statusData.Completed++;
 
-            // Count by rating
-            const ratingValue = getCellValue(row, 17);
-            if (ratingValue === 1) {
-              completedRatingOne++;
-            } else if (ratingValue === 2) {
-              completedRatingTwo++;
-            } else if (ratingValue > 2) {
-              completedRatingThreePlus++;
+            // Count by rating (delegation only)
+            if (dashboardType === "delegation") {
+              const ratingValue = getCellValue(row, 17);
+              if (ratingValue === 1) completedRatingOne++;
+              else if (ratingValue === 2) completedRatingTwo++;
+              else if (ratingValue > 2) completedRatingThreePlus++;
             }
 
             // Update monthly data
@@ -610,55 +673,21 @@ export default function AdminDashboard() {
             }
           } else {
             staffData.pendingTasks++;
+            pendingTasks++;
+            statusData.Pending++;
 
-            if (isDateInPast(taskStartDate) && !isDateToday(taskStartDate)) {
+            if (status === 'overdue') {
               overdueTasks++;
               statusData.Overdue++;
             }
 
-            pendingTasks++;
-            statusData.Pending++;
+            // Monthly pending data
+            const monthName = (dashboardType === "checklist")
+              ? today.toLocaleString('default', { month: 'short' })
+              : new Date().toLocaleString('default', { month: 'short' });
 
-            const monthName = new Date().toLocaleString('default', { month: 'short' });
             if (monthlyData[monthName]) {
               monthlyData[monthName].pending++;
-            }
-          }
-        } else {
-          // For CHECKLIST mode
-          const taskStartDateObj = parseDateFromDDMMYYYY(taskStartDate);
-          const shouldCountInStats = taskStartDateObj <= today;
-
-          if (shouldCountInStats) {
-            totalTasks++;
-
-            if (status === 'completed') {
-              completedTasks++;
-              staffData.completedTasks++;
-              statusData.Completed++;
-
-              const completedMonth = parseDateFromDDMMYYYY(completionDate);
-              if (completedMonth) {
-                const monthName = completedMonth.toLocaleString('default', { month: 'short' });
-                if (monthlyData[monthName]) {
-                  monthlyData[monthName].completed++;
-                }
-              }
-            } else {
-              staffData.pendingTasks++;
-
-              if (isDateInPast(taskStartDate) && !isDateToday(taskStartDate)) {
-                overdueTasks++;
-                statusData.Overdue++;
-              }
-
-              pendingTasks++;
-              statusData.Pending++;
-
-              const monthName = today.toLocaleString('default', { month: 'short' });
-              if (monthlyData[monthName]) {
-                monthlyData[monthName].pending++;
-              }
             }
           }
         }
@@ -666,7 +695,7 @@ export default function AdminDashboard() {
         return taskObj;
       }).filter(task => task !== null);
 
-      console.log("Processed rows:", processedRows.length);
+      console.log("Processed rows (combined):", processedRows.length);
 
       // Calculate completion rate
       const completionRate = totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(1) : 0;

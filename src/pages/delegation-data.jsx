@@ -25,7 +25,7 @@ export default function DelegationPage({
   const CONFIG = useMemo(
     () => ({
       APPS_SCRIPT_URL:
-        "https://script.google.com/macros/s/AKfycbwcmMvtW0SIzCnaVf_b5Z2-RXc6Ujo9i0uJAfwLilw7s3I9CIgBpE8RENgy8abKV08G/exec",
+        "https://script.google.com/macros/s/AKfycbyaBCq6ZKHhOZBXRp9qw3hqrXh_aIOPvIHh_G41KtzPovhjl-UjEgj75Ok6gwJhrPOX/exec",
       DELEGATION_SHEET: "Delegation",
     }),
     []
@@ -269,11 +269,9 @@ export default function DelegationPage({
               {columns.map((column) => (
                 <th
                   key={column.label}
-                  className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
-                    column.bg || ""
-                  } ${column.minWidth || ""} ${
-                    column.key ? "cursor-pointer hover:bg-gray-100" : ""
-                  }`}
+                  className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${column.bg || ""
+                    } ${column.minWidth || ""} ${column.key ? "cursor-pointer hover:bg-gray-100" : ""
+                    }`}
                   onClick={() => requestSort(column.key)}
                 >
                   <div className="flex items-center">
@@ -318,15 +316,14 @@ export default function DelegationPage({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <span
-                      className={`px-2 py-1 rounded-full text-xs ${
-                        task.Freq === "Daily"
+                      className={`px-2 py-1 rounded-full text-xs ${task.Freq === "Daily"
                           ? "bg-blue-100 text-blue-800"
                           : task.Freq === "Weekly"
-                          ? "bg-green-100 text-green-800"
-                          : task.Freq === "Monthly"
-                          ? "bg-purple-100 text-purple-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
+                            ? "bg-green-100 text-green-800"
+                            : task.Freq === "Monthly"
+                              ? "bg-purple-100 text-purple-800"
+                              : "bg-gray-100 text-gray-800"
+                        }`}
                     >
                       {task.Freq || "—"}
                     </span>
@@ -348,10 +345,10 @@ export default function DelegationPage({
                   {searchTerm || nameFilter || freqFilter
                     ? "No delegation tasks matching your filters"
                     : loading
-                    ? "Loading..."
-                    : userRole === "admin"
-                    ? "No delegation tasks available"
-                    : "No delegation tasks assigned to you"}
+                      ? "Loading..."
+                      : userRole === "admin"
+                        ? "No delegation tasks available"
+                        : "No delegation tasks assigned to you"}
                 </td>
               </tr>
             )}
@@ -438,15 +435,14 @@ export default function DelegationPage({
                 <div className="flex justify-between items-center border-b pb-2">
                   <span className="font-medium text-gray-700">Frequency:</span>
                   <span
-                    className={`px-2 py-1 rounded-full text-xs ${
-                      task.Freq === "Daily"
+                    className={`px-2 py-1 rounded-full text-xs ${task.Freq === "Daily"
                         ? "bg-blue-100 text-blue-800"
                         : task.Freq === "Weekly"
-                        ? "bg-green-100 text-green-800"
-                        : task.Freq === "Monthly"
-                        ? "bg-purple-100 text-purple-800"
-                        : "bg-gray-100 text-gray-800"
-                    }`}
+                          ? "bg-green-100 text-green-800"
+                          : task.Freq === "Monthly"
+                            ? "bg-purple-100 text-purple-800"
+                            : "bg-gray-100 text-gray-800"
+                      }`}
                   >
                     {task.Freq || "—"}
                   </span>
@@ -475,10 +471,10 @@ export default function DelegationPage({
             {searchTerm || nameFilter || freqFilter
               ? "No delegation tasks matching your filters"
               : loading
-              ? "Loading..."
-              : userRole === "admin"
-              ? "No delegation tasks available"
-              : "No delegation tasks assigned to you"}
+                ? "Loading..."
+                : userRole === "admin"
+                  ? "No delegation tasks available"
+                  : "No delegation tasks assigned to you"}
           </div>
         )}
       </div>

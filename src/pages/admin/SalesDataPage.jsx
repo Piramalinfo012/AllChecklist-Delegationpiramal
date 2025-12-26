@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback, useMemo,useRef,captureBtnRef   } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, captureBtnRef } from "react";
 import {
   CheckCircle2,
   Upload,
@@ -11,7 +11,7 @@ import {
   Save,
   XCircle,
   Camera,
-  
+
 } from "lucide-react";
 import AdminLayout from "../../components/layout/AdminLayout";
 
@@ -19,9 +19,9 @@ import AdminLayout from "../../components/layout/AdminLayout";
 const CONFIG = {
   // Google Apps Script URL
   APPS_SCRIPT_URL:
-    "https://script.google.com/macros/s/AKfycbwcmMvtW0SIzCnaVf_b5Z2-RXc6Ujo9i0uJAfwLilw7s3I9CIgBpE8RENgy8abKV08G/exec",
+    "https://script.google.com/macros/s/AKfycbyaBCq6ZKHhOZBXRp9qw3hqrXh_aIOPvIHh_G41KtzPovhjl-UjEgj75Ok6gwJhrPOX/exec",
   // Google Drive folder ID for file uploads
-  DRIVE_FOLDER_ID: "1mocSXHZWgUBRpRCpOS_-1L-f0CcVJcl_",
+  DRIVE_FOLDER_ID: "1CQfQIVeUfOHePuUqtf3SQ-Hd6vJBfrYd",
   // Sheet name to work with
   SHEET_NAME: "Checklist",
   // Page configuration
@@ -77,9 +77,9 @@ function AccountDataPage() {
   const canvasRef = useRef(null);
   const [isCameraLoading, setIsCameraLoading] = useState(false); // ✅ Ye line check karo
   // Add these functions in your component (around line 150-250, after other functions)
-  
-  
-  
+
+
+
   // Camera cleanup when component unmounts
   useEffect(() => {
     return () => {
@@ -88,258 +88,258 @@ function AccountDataPage() {
       }
     };
   }, [cameraStream]);
-// ✅ Add these camera functions in your component (around line 150-250)
+  // ✅ Add these camera functions in your component (around line 150-250)
 
-const startCamera = async () => {
-  try {
-    setCameraError("");
-    setIsCameraLoading(true);
-    
-    console.log("🎥 Starting camera... Platform check");
+  const startCamera = async () => {
+    try {
+      setCameraError("");
+      setIsCameraLoading(true);
 
-    // Check camera support
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      const errorMsg = "Camera not supported on this device/browser";
-      setCameraError(errorMsg);
-      console.error(errorMsg);
+      console.log("🎥 Starting camera... Platform check");
+
+      // Check camera support
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        const errorMsg = "Camera not supported on this device/browser";
+        setCameraError(errorMsg);
+        console.error(errorMsg);
+        setIsCameraLoading(false);
+        return;
+      }
+
+      // Detect device type
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      console.log(`📱 Device: ${isMobile ? 'Mobile' : 'Desktop'}`);
+
+      // Different constraints for mobile vs desktop
+      let constraints;
+
+      if (isMobile) {
+        // MOBILE CONSTRAINTS
+        constraints = {
+          video: {
+            facingMode: { exact: "environment" }, // Force back camera on mobile
+            width: { ideal: 1280, max: 1920 },
+            height: { ideal: 720, max: 1080 },
+            frameRate: { ideal: 24, max: 30 }
+          },
+          audio: false
+        };
+      } else {
+        // DESKTOP CONSTRAINTS
+        constraints = {
+          video: {
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            frameRate: { ideal: 30 }
+          },
+          audio: false
+        };
+      }
+
+      console.log("📹 Requesting camera with constraints:", constraints);
+
+      // Get camera stream
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log("✅ Camera stream obtained");
+
+      // Set state
+      setCameraStream(stream);
+      setIsCameraOpen(true);
+
+      // Set video source
+      if (videoRef.current) {
+        const video = videoRef.current;
+        video.srcObject = stream;
+
+        // Wait for video to load
+        await new Promise((resolve) => {
+          if (video.readyState >= 3) { // HAVE_FUTURE_DATA
+            resolve();
+            return;
+          }
+
+          video.onloadedmetadata = () => {
+            console.log("✅ Video metadata loaded");
+            resolve();
+          };
+
+          video.onerror = () => {
+            console.error("❌ Video error event");
+            resolve(); // Still continue even if error
+          };
+
+          // Timeout fallback
+          setTimeout(resolve, 2000);
+        });
+
+        // Play video
+        try {
+          await video.play();
+          console.log("▶️ Video playing successfully");
+        } catch (playError) {
+          console.warn("⚠️ Autoplay prevented, trying with user gesture...", playError);
+          // Mobile browsers often block autoplay, but we can still show the stream
+        }
+      }
+
+      console.log("🚀 Camera started successfully");
       setIsCameraLoading(false);
+
+    } catch (error) {
+      console.error("❌ Camera error details:", error);
+      setIsCameraLoading(false);
+
+      // User-friendly error messages
+      let errorMessage = "Unable to access camera";
+
+      switch (error.name) {
+        case 'NotAllowedError':
+        case 'PermissionDeniedError':
+          errorMessage = "Camera permission denied. Please allow camera access in your browser settings.";
+          break;
+        case 'NotFoundError':
+        case 'DevicesNotFoundError':
+          errorMessage = "No camera found on this device.";
+          break;
+        case 'NotReadableError':
+        case 'TrackStartError':
+          errorMessage = "Camera is already in use by another application.";
+          break;
+        case 'OverconstrainedError':
+          errorMessage = "Camera constraints could not be satisfied. Trying alternative settings...";
+          // Try with simpler constraints
+          try {
+            const fallbackStream = await navigator.mediaDevices.getUserMedia({
+              video: true,
+              audio: false
+            });
+            if (videoRef.current) {
+              videoRef.current.srcObject = fallbackStream;
+              setCameraStream(fallbackStream);
+              setIsCameraOpen(true);
+              setIsCameraLoading(false);
+              return; // Success with fallback
+            }
+          } catch (fallbackError) {
+            console.error("Fallback also failed:", fallbackError);
+            errorMessage = "Camera access failed even with basic settings.";
+          }
+          break;
+        default:
+          errorMessage = `Camera error: ${error.message || error.name}`;
+      }
+
+      setCameraError(errorMessage);
+    }
+  };
+
+  // ✅ UPDATED: UNIVERSAL CAPTURE PHOTO FUNCTION
+  const capturePhoto = async () => {
+    console.log("📸 Capture photo initiated...");
+
+    if (!currentCaptureId) {
+      alert("Please select a task first");
       return;
     }
 
-    // Detect device type
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    console.log(`📱 Device: ${isMobile ? 'Mobile' : 'Desktop'}`);
-
-    // Different constraints for mobile vs desktop
-    let constraints;
-    
-    if (isMobile) {
-      // MOBILE CONSTRAINTS
-      constraints = {
-        video: {
-          facingMode: { exact: "environment" }, // Force back camera on mobile
-          width: { ideal: 1280, max: 1920 },
-          height: { ideal: 720, max: 1080 },
-          frameRate: { ideal: 24, max: 30 }
-        },
-        audio: false
-      };
-    } else {
-      // DESKTOP CONSTRAINTS
-      constraints = {
-        video: {
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-          frameRate: { ideal: 30 }
-        },
-        audio: false
-      };
+    if (!videoRef.current) {
+      alert("Camera not ready. Please wait or restart camera.");
+      return;
     }
 
-    console.log("📹 Requesting camera with constraints:", constraints);
+    const video = videoRef.current;
 
-    // Get camera stream
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    console.log("✅ Camera stream obtained");
+    // Check video state
+    if (video.readyState < video.HAVE_CURRENT_DATA) {
+      alert("Camera still loading. Please wait...");
+      return;
+    }
 
-    // Set state
-    setCameraStream(stream);
-    setIsCameraOpen(true);
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      alert("Camera feed not available. Please check camera permissions.");
+      return;
+    }
 
-    // Set video source
-    if (videoRef.current) {
-      const video = videoRef.current;
-      video.srcObject = stream;
-      
-      // Wait for video to load
-      await new Promise((resolve) => {
-        if (video.readyState >= 3) { // HAVE_FUTURE_DATA
-          resolve();
-          return;
-        }
-        
-        video.onloadedmetadata = () => {
-          console.log("✅ Video metadata loaded");
-          resolve();
-        };
-        
-        video.onerror = () => {
-          console.error("❌ Video error event");
-          resolve(); // Still continue even if error
-        };
-        
-        // Timeout fallback
-        setTimeout(resolve, 2000);
+    try {
+      console.log(`Capturing from video: ${video.videoWidth}x${video.videoHeight}`);
+
+      // Create canvas with video dimensions
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      const context = canvas.getContext('2d');
+      if (!context) {
+        throw new Error("Could not create canvas context");
+      }
+
+      // Draw video frame to canvas
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      console.log("✅ Frame drawn to canvas");
+
+      // Convert to blob
+      const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              console.log(`📦 Blob created: ${(blob.size / 1024).toFixed(1)} KB`);
+              resolve(blob);
+            } else {
+              reject(new Error("Canvas to blob conversion failed"));
+            }
+          },
+          'image/jpeg',
+          0.92 // Good quality for both mobile and desktop
+        );
       });
 
-      // Play video
-      try {
-        await video.play();
-        console.log("▶️ Video playing successfully");
-      } catch (playError) {
-        console.warn("⚠️ Autoplay prevented, trying with user gesture...", playError);
-        // Mobile browsers often block autoplay, but we can still show the stream
-      }
+      // Create file object
+      const fileName = `task_${currentCaptureId}_${Date.now()}.jpg`;
+      const file = new File([blob], fileName, { type: 'image/jpeg' });
+
+      console.log(`✅ Photo captured: ${fileName}`);
+
+      // Stop camera
+      stopCamera();
+
+      // Update state with captured photo
+      handleCameraCapture(currentCaptureId, file);
+
+      // Show success message
+      setSuccessMessage("Photo captured successfully! Ready to submit.");
+
+      // Auto-hide success message after 3 seconds
+      setTimeout(() => setSuccessMessage(""), 3000);
+
+    } catch (error) {
+      console.error("❌ Photo capture error:", error);
+      alert(`Failed to capture photo: ${error.message}`);
+    }
+  };
+
+  // ✅ UPDATED: STOP CAMERA FUNCTION
+  const stopCamera = () => {
+    console.log("🛑 Stopping camera...");
+
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => {
+        track.stop();
+        console.log(`Stopped track: ${track.kind}`);
+      });
+      setCameraStream(null);
     }
 
-    console.log("🚀 Camera started successfully");
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+
+    setIsCameraOpen(false);
+    setCameraError("");
     setIsCameraLoading(false);
+    setCurrentCaptureId(null);
 
-  } catch (error) {
-    console.error("❌ Camera error details:", error);
-    setIsCameraLoading(false);
-
-    // User-friendly error messages
-    let errorMessage = "Unable to access camera";
-    
-    switch (error.name) {
-      case 'NotAllowedError':
-      case 'PermissionDeniedError':
-        errorMessage = "Camera permission denied. Please allow camera access in your browser settings.";
-        break;
-      case 'NotFoundError':
-      case 'DevicesNotFoundError':
-        errorMessage = "No camera found on this device.";
-        break;
-      case 'NotReadableError':
-      case 'TrackStartError':
-        errorMessage = "Camera is already in use by another application.";
-        break;
-      case 'OverconstrainedError':
-        errorMessage = "Camera constraints could not be satisfied. Trying alternative settings...";
-        // Try with simpler constraints
-        try {
-          const fallbackStream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: false
-          });
-          if (videoRef.current) {
-            videoRef.current.srcObject = fallbackStream;
-            setCameraStream(fallbackStream);
-            setIsCameraOpen(true);
-            setIsCameraLoading(false);
-            return; // Success with fallback
-          }
-        } catch (fallbackError) {
-          console.error("Fallback also failed:", fallbackError);
-          errorMessage = "Camera access failed even with basic settings.";
-        }
-        break;
-      default:
-        errorMessage = `Camera error: ${error.message || error.name}`;
-    }
-    
-    setCameraError(errorMessage);
-  }
-};
-
-// ✅ UPDATED: UNIVERSAL CAPTURE PHOTO FUNCTION
-const capturePhoto = async () => {
-  console.log("📸 Capture photo initiated...");
-  
-  if (!currentCaptureId) {
-    alert("Please select a task first");
-    return;
-  }
-
-  if (!videoRef.current) {
-    alert("Camera not ready. Please wait or restart camera.");
-    return;
-  }
-
-  const video = videoRef.current;
-  
-  // Check video state
-  if (video.readyState < video.HAVE_CURRENT_DATA) {
-    alert("Camera still loading. Please wait...");
-    return;
-  }
-
-  if (video.videoWidth === 0 || video.videoHeight === 0) {
-    alert("Camera feed not available. Please check camera permissions.");
-    return;
-  }
-
-  try {
-    console.log(`Capturing from video: ${video.videoWidth}x${video.videoHeight}`);
-    
-    // Create canvas with video dimensions
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    
-    const context = canvas.getContext('2d');
-    if (!context) {
-      throw new Error("Could not create canvas context");
-    }
-
-    // Draw video frame to canvas
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    console.log("✅ Frame drawn to canvas");
-
-    // Convert to blob
-    const blob = await new Promise((resolve, reject) => {
-      canvas.toBlob(
-        (blob) => {
-          if (blob) {
-            console.log(`📦 Blob created: ${(blob.size / 1024).toFixed(1)} KB`);
-            resolve(blob);
-          } else {
-            reject(new Error("Canvas to blob conversion failed"));
-          }
-        },
-        'image/jpeg',
-        0.92 // Good quality for both mobile and desktop
-      );
-    });
-
-    // Create file object
-    const fileName = `task_${currentCaptureId}_${Date.now()}.jpg`;
-    const file = new File([blob], fileName, { type: 'image/jpeg' });
-    
-    console.log(`✅ Photo captured: ${fileName}`);
-
-    // Stop camera
-    stopCamera();
-
-    // Update state with captured photo
-    handleCameraCapture(currentCaptureId, file);
-
-    // Show success message
-    setSuccessMessage("Photo captured successfully! Ready to submit.");
-    
-    // Auto-hide success message after 3 seconds
-    setTimeout(() => setSuccessMessage(""), 3000);
-
-  } catch (error) {
-    console.error("❌ Photo capture error:", error);
-    alert(`Failed to capture photo: ${error.message}`);
-  }
-};
-
-// ✅ UPDATED: STOP CAMERA FUNCTION
-const stopCamera = () => {
-  console.log("🛑 Stopping camera...");
-  
-  if (cameraStream) {
-    cameraStream.getTracks().forEach(track => {
-      track.stop();
-      console.log(`Stopped track: ${track.kind}`);
-    });
-    setCameraStream(null);
-  }
-  
-  if (videoRef.current) {
-    videoRef.current.srcObject = null;
-  }
-  
-  setIsCameraOpen(false);
-  setCameraError("");
-  setIsCameraLoading(false);
-  setCurrentCaptureId(null);
-  
-  console.log("✅ Camera stopped completely");
-};
+    console.log("✅ Camera stopped completely");
+  };
 
   const isAdmin = userRole === "admin";
   // UPDATED: Format date-time to DD/MM/YYYY HH:MM:SS
@@ -731,12 +731,12 @@ const stopCamera = () => {
   const filteredAccountData = useMemo(() => {
     const filtered = searchTerm
       ? accountData.filter((account) =>
-          Object.values(account).some(
-            (value) =>
-              value &&
-              value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-          )
+        Object.values(account).some(
+          (value) =>
+            value &&
+            value.toString().toLowerCase().includes(searchTerm.toLowerCase())
         )
+      )
       : accountData;
     return filtered.sort(sortDateWise);
   }, [accountData, searchTerm]);
@@ -746,13 +746,13 @@ const stopCamera = () => {
       .filter((item) => {
         const matchesSearch = searchTerm
           ? Object.values(item).some(
-              (value) =>
-                value &&
-                value
-                  .toString()
-                  .toLowerCase()
-                  .includes(searchTerm.toLowerCase())
-            )
+            (value) =>
+              value &&
+              value
+                .toString()
+                .toLowerCase()
+                .includes(searchTerm.toLowerCase())
+          )
           : true;
         const matchesMember =
           selectedMembers.length > 0
@@ -791,14 +791,14 @@ const stopCamera = () => {
     const memberStats =
       selectedMembers.length > 0
         ? selectedMembers.reduce((stats, member) => {
-            const memberTasks = historyData.filter(
-              (task) => task["col4"] === member
-            ).length;
-            return {
-              ...stats,
-              [member]: memberTasks,
-            };
-          }, {})
+          const memberTasks = historyData.filter(
+            (task) => task["col4"] === member
+          ).length;
+          return {
+            ...stats,
+            [member]: memberTasks,
+          };
+        }, {})
         : {};
     const filteredTotal = filteredHistoryData.length;
     return {
@@ -828,161 +828,161 @@ const stopCamera = () => {
     }
   };
 
-// UPDATED: fetchSheetData - Show only data where Column K is null
-const fetchSheetData = useCallback(async () => {
-  try {
-    setLoading(true);
-    const pendingAccounts = [];
-    const historyRows = [];
-    const response = await fetch(
-      `${CONFIG.APPS_SCRIPT_URL}?sheet=${CONFIG.SHEET_NAME}&action=fetch`
-    );
-    if (!response.ok) {
-      throw new Error(`Failed to fetch data: ${response.status}`);
-    }
-    const text = await response.text();
-    let data;
+  // UPDATED: fetchSheetData - Show only data where Column K is null
+  const fetchSheetData = useCallback(async () => {
     try {
-      data = JSON.parse(text);
-    } catch (parseError) {
-      const jsonStart = text.indexOf("{");
-      const jsonEnd = text.lastIndexOf("}");
-      if (jsonStart !== -1 && jsonEnd !== -1) {
-        const jsonString = text.substring(jsonStart, jsonEnd + 1);
-        data = JSON.parse(jsonString);
-      } else {
-        throw new Error("Invalid JSON response from server");
+      setLoading(true);
+      const pendingAccounts = [];
+      const historyRows = [];
+      const response = await fetch(
+        `${CONFIG.APPS_SCRIPT_URL}?sheet=${CONFIG.SHEET_NAME}&action=fetch`
+      );
+      if (!response.ok) {
+        throw new Error(`Failed to fetch data: ${response.status}`);
       }
-    }
-
-    const currentUsername = sessionStorage.getItem("username");
-    const currentUserRole = sessionStorage.getItem("role");
-
-    const membersSet = new Set();
-    let rows = [];
-    if (data.table && data.table.rows) {
-      rows = data.table.rows;
-    } else if (Array.isArray(data)) {
-      rows = data;
-    } else if (data.values) {
-      rows = data.values.map((row) => ({
-        c: row.map((val) => ({ v: val })),
-      }));
-    }
-
-    rows.forEach((row, rowIndex) => {
-      if (rowIndex === 0) return;
-      let rowValues = [];
-      if (row.c) {
-        rowValues = row.c.map((cell) =>
-          cell && cell.v !== undefined ? cell.v : ""
-        );
-      } else if (Array.isArray(row)) {
-        rowValues = row;
-      } else {
-        return;
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (parseError) {
+        const jsonStart = text.indexOf("{");
+        const jsonEnd = text.lastIndexOf("}");
+        if (jsonStart !== -1 && jsonEnd !== -1) {
+          const jsonString = text.substring(jsonStart, jsonEnd + 1);
+          data = JSON.parse(jsonString);
+        } else {
+          throw new Error("Invalid JSON response from server");
+        }
       }
 
-      const assignedTo = rowValues[4] || "Unassigned";
-      membersSet.add(assignedTo);
+      const currentUsername = sessionStorage.getItem("username");
+      const currentUserRole = sessionStorage.getItem("role");
 
-      const filterName = buddyTaskFilter || currentUsername;
+      const membersSet = new Set();
+      let rows = [];
+      if (data.table && data.table.rows) {
+        rows = data.table.rows;
+      } else if (Array.isArray(data)) {
+        rows = data;
+      } else if (data.values) {
+        rows = data.values.map((row) => ({
+          c: row.map((val) => ({ v: val })),
+        }));
+      }
 
-      const isUserMatch =
-        currentUserRole === "admin" ||
-        assignedTo.toLowerCase() === filterName.toLowerCase();
+      rows.forEach((row, rowIndex) => {
+        if (rowIndex === 0) return;
+        let rowValues = [];
+        if (row.c) {
+          rowValues = row.c.map((cell) =>
+            cell && cell.v !== undefined ? cell.v : ""
+          );
+        } else if (Array.isArray(row)) {
+          rowValues = row;
+        } else {
+          return;
+        }
 
-      if (!isUserMatch && currentUserRole !== "admin") return;
+        const assignedTo = rowValues[4] || "Unassigned";
+        membersSet.add(assignedTo);
 
-      const columnGValue = rowValues[6]; // Task Start Date
-      const columnKValue = rowValues[10]; // Actual Date (Column K)
-      const columnPValue = rowValues[15]; // Admin Processed Date (Column P)
+        const filterName = buddyTaskFilter || currentUsername;
 
-      const rowDateStr = columnGValue ? String(columnGValue).trim() : "";
-      const formattedRowDate = parseGoogleSheetsDateTime(rowDateStr);
-      const googleSheetsRowIndex = rowIndex + 1;
+        const isUserMatch =
+          currentUserRole === "admin" ||
+          assignedTo.toLowerCase() === filterName.toLowerCase();
 
-      // Create stable unique ID using task ID and row index
-      const taskId = rowValues[1] || "";
-      const stableId = taskId
-        ? `task_${taskId}_${googleSheetsRowIndex}`
-        : `row_${googleSheetsRowIndex}_${Math.random()
+        if (!isUserMatch && currentUserRole !== "admin") return;
+
+        const columnGValue = rowValues[6]; // Task Start Date
+        const columnKValue = rowValues[10]; // Actual Date (Column K)
+        const columnPValue = rowValues[15]; // Admin Processed Date (Column P)
+
+        const rowDateStr = columnGValue ? String(columnGValue).trim() : "";
+        const formattedRowDate = parseGoogleSheetsDateTime(rowDateStr);
+        const googleSheetsRowIndex = rowIndex + 1;
+
+        // Create stable unique ID using task ID and row index
+        const taskId = rowValues[1] || "";
+        const stableId = taskId
+          ? `task_${taskId}_${googleSheetsRowIndex}`
+          : `row_${googleSheetsRowIndex}_${Math.random()
             .toString(36)
             .substring(2, 15)}`;
 
-      const rowData = {
-        _id: stableId,
-        _rowIndex: googleSheetsRowIndex,
-        _taskId: taskId,
-      };
+        const rowData = {
+          _id: stableId,
+          _rowIndex: googleSheetsRowIndex,
+          _taskId: taskId,
+        };
 
-      const columnHeaders = [
-        { id: "col0", label: "Timestamp", type: "string" },
-        { id: "col1", label: "Task ID", type: "string" },
-        { id: "col2", label: "Firm", type: "string" },
-        { id: "col3", label: "Given By", type: "string" },
-        { id: "col4", label: "Name", type: "string" },
-        { id: "col5", label: "Task Description", type: "string" },
-        { id: "col6", label: "Task Start Date", type: "datetime" },
-        { id: "col7", label: "Freq", type: "string" },
-        { id: "col8", label: "Enable Reminders", type: "string" },
-        { id: "col9", label: "Require Attachment", type: "string" },
-        { id: "col10", label: "Actual", type: "datetime" },
-        { id: "col11", label: "Column L", type: "string" },
-        { id: "col12", label: "Status", type: "string" },
-        { id: "col13", label: "Remarks", type: "string" },
-        { id: "col14", label: "Uploaded Image", type: "string" },
-        { id: "col15", label: "Admin Done", type: "string" }, // Column P
-      ];
+        const columnHeaders = [
+          { id: "col0", label: "Timestamp", type: "string" },
+          { id: "col1", label: "Task ID", type: "string" },
+          { id: "col2", label: "Firm", type: "string" },
+          { id: "col3", label: "Given By", type: "string" },
+          { id: "col4", label: "Name", type: "string" },
+          { id: "col5", label: "Task Description", type: "string" },
+          { id: "col6", label: "Task Start Date", type: "datetime" },
+          { id: "col7", label: "Freq", type: "string" },
+          { id: "col8", label: "Enable Reminders", type: "string" },
+          { id: "col9", label: "Require Attachment", type: "string" },
+          { id: "col10", label: "Actual", type: "datetime" },
+          { id: "col11", label: "Column L", type: "string" },
+          { id: "col12", label: "Status", type: "string" },
+          { id: "col13", label: "Remarks", type: "string" },
+          { id: "col14", label: "Uploaded Image", type: "string" },
+          { id: "col15", label: "Admin Done", type: "string" }, // Column P
+        ];
 
-      columnHeaders.forEach((header, index) => {
-        const cellValue = rowValues[index];
-        if (
-          header.type === "datetime" ||
-          header.type === "date" ||
-          (cellValue && String(cellValue).startsWith("Date("))
-        ) {
-          rowData[header.id] = cellValue
-            ? parseGoogleSheetsDateTime(String(cellValue))
-            : "";
-        } else if (
-          header.type === "number" &&
-          cellValue !== null &&
-          cellValue !== ""
-        ) {
-          rowData[header.id] = cellValue;
-        } else {
-          rowData[header.id] = cellValue !== null ? cellValue : "";
+        columnHeaders.forEach((header, index) => {
+          const cellValue = rowValues[index];
+          if (
+            header.type === "datetime" ||
+            header.type === "date" ||
+            (cellValue && String(cellValue).startsWith("Date("))
+          ) {
+            rowData[header.id] = cellValue
+              ? parseGoogleSheetsDateTime(String(cellValue))
+              : "";
+          } else if (
+            header.type === "number" &&
+            cellValue !== null &&
+            cellValue !== ""
+          ) {
+            rowData[header.id] = cellValue;
+          } else {
+            rowData[header.id] = cellValue !== null ? cellValue : "";
+          }
+        });
+
+        // ✅ ONLY ADD IF COLUMN K IS EMPTY/NULL
+        const isColumnKEmpty = isEmpty(columnKValue);
+
+        if (isColumnKEmpty && isEmpty(columnPValue)) {
+          pendingAccounts.push(rowData);
+        }
+        // For history view, include tasks where Column K is NOT empty
+        else if (!isColumnKEmpty) {
+          const isUserHistoryMatch =
+            currentUserRole === "admin" ||
+            assignedTo.toLowerCase() === currentUsername.toLowerCase();
+          if (isUserHistoryMatch) {
+            historyRows.push(rowData);
+          }
         }
       });
 
-      // ✅ ONLY ADD IF COLUMN K IS EMPTY/NULL
-      const isColumnKEmpty = isEmpty(columnKValue);
-
-      if (isColumnKEmpty && isEmpty(columnPValue)) {
-        pendingAccounts.push(rowData);
-      }
-      // For history view, include tasks where Column K is NOT empty
-      else if (!isColumnKEmpty) {
-        const isUserHistoryMatch =
-          currentUserRole === "admin" ||
-          assignedTo.toLowerCase() === currentUsername.toLowerCase();
-        if (isUserHistoryMatch) {
-          historyRows.push(rowData);
-        }
-      }
-    });
-
-    setMembersList(Array.from(membersSet).sort());
-    setAccountData(pendingAccounts);
-    setHistoryData(historyRows);
-    setLoading(false);
-  } catch (error) {
-    console.error("Error fetching sheet data:", error);
-    setError("Failed to load account data: " + error.message);
-    setLoading(false);
-  }
-}, [buddyTaskFilter]);
+      setMembersList(Array.from(membersSet).sort());
+      setAccountData(pendingAccounts);
+      setHistoryData(historyRows);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching sheet data:", error);
+      setError("Failed to load account data: " + error.message);
+      setLoading(false);
+    }
+  }, [buddyTaskFilter]);
 
   useEffect(() => {
     fetchSheetData();
@@ -1043,35 +1043,35 @@ const fetchSheetData = useCallback(async () => {
     [filteredAccountData]
   );
 
-// ✅ SEPARATE: File upload handler
-const handleImageUpload = useCallback(async (id, e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+  // ✅ SEPARATE: File upload handler
+  const handleImageUpload = useCallback(async (id, e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  console.log(`📁 File upload for: ${id}`, file.name);
-  
-  setAccountData((prev) =>
-    prev.map((item) => (item._id === id ? { ...item, image: file } : item))
-  );
-}, []);
+    console.log(`📁 File upload for: ${id}`, file.name);
 
-const handleCameraCapture = useCallback((id, file) => {
-  console.log("📸 handleCameraCapture called");
-  console.log("ID:", id);
-  console.log("File:", file.name, file.size, "bytes");
-  
-  setAccountData((prev) => {
-    const updated = prev.map((item) => {
-      if (item._id === id) {
-        console.log("✅ Found matching item, updating image");
-        return { ...item, image: file };
-      }
-      return item;
+    setAccountData((prev) =>
+      prev.map((item) => (item._id === id ? { ...item, image: file } : item))
+    );
+  }, []);
+
+  const handleCameraCapture = useCallback((id, file) => {
+    console.log("📸 handleCameraCapture called");
+    console.log("ID:", id);
+    console.log("File:", file.name, file.size, "bytes");
+
+    setAccountData((prev) => {
+      const updated = prev.map((item) => {
+        if (item._id === id) {
+          console.log("✅ Found matching item, updating image");
+          return { ...item, image: file };
+        }
+        return item;
+      });
+      console.log("📊 State updated");
+      return updated;
     });
-    console.log("📊 State updated");
-    return updated;
-  });
-}, []);
+  }, []);
 
   const fileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
@@ -1185,8 +1185,8 @@ const handleCameraCapture = useCallback((id, file) => {
           buddyTaskFilter &&
           buddyTaskFilter !== "" &&
           assignedTo.toLowerCase() !== username.toLowerCase();
-          console.log("isbuddyTask",isBuddyTask);
-          console.log("username",username);
+        console.log("isbuddyTask", isBuddyTask);
+        console.log("username", username);
 
         submissionData.push({
           taskId: item["col1"], // Column B
@@ -1334,11 +1334,10 @@ const handleCameraCapture = useCallback((id, file) => {
               <button
                 onClick={handleSubmit}
                 disabled={!isSubmitEnabled || isSubmitting}
-                className={`rounded-md py-2 px-4 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200 w-full sm:w-auto ${
-                  isSubmitEnabled && !isSubmitting
-                    ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 cursor-pointer"
-                    : "bg-gray-400 cursor-not-allowed opacity-50"
-                }`}
+                className={`rounded-md py-2 px-4 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200 w-full sm:w-auto ${isSubmitEnabled && !isSubmitting
+                  ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 cursor-pointer"
+                  : "bg-gray-400 cursor-not-allowed opacity-50"
+                  }`}
               >
                 {isSubmitting
                   ? "Processing..."
@@ -1390,9 +1389,8 @@ const handleCameraCapture = useCallback((id, file) => {
               </h2>
               <p className="text-purple-600 text-sm">
                 {showHistory
-                  ? `${CONFIG.PAGE_CONFIG.historyDescription} for ${
-                      userRole === "admin" ? "all" : "your"
-                    } tasks`
+                  ? `${CONFIG.PAGE_CONFIG.historyDescription} for ${userRole === "admin" ? "all" : "your"
+                  } tasks`
                   : CONFIG.PAGE_CONFIG.description}
               </p>
             </div>
@@ -1493,13 +1491,13 @@ const handleCameraCapture = useCallback((id, file) => {
                     startDate ||
                     endDate ||
                     searchTerm) && (
-                    <button
-                      onClick={resetFilters}
-                      className="px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 text-sm"
-                    >
-                      Clear All Filters
-                    </button>
-                  )}
+                      <button
+                        onClick={resetFilters}
+                        className="px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 text-sm"
+                      >
+                        Clear All Filters
+                      </button>
+                    )}
                 </div>
               </div>
 
@@ -1532,15 +1530,15 @@ const handleCameraCapture = useCallback((id, file) => {
                       startDate ||
                       endDate ||
                       searchTerm) && (
-                      <div className="px-3 py-2 bg-white rounded-md shadow-sm">
-                        <span className="text-xs text-gray-500">
-                          Filtered Results
-                        </span>
-                        <div className="text-lg font-semibold text-blue-600">
-                          {getTaskStatistics().filteredTotal}
+                        <div className="px-3 py-2 bg-white rounded-md shadow-sm">
+                          <span className="text-xs text-gray-500">
+                            Filtered Results
+                          </span>
+                          <div className="text-lg font-semibold text-blue-600">
+                            {getTaskStatistics().filteredTotal}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
                     {selectedMembers.map((member) => (
                       <div
                         key={member}
@@ -1582,17 +1580,17 @@ const handleCameraCapture = useCallback((id, file) => {
                                     (item["col15"].toString().trim() !==
                                       "Done" &&
                                       item["col15"].toString().trim() !==
-                                        "Not Done")
+                                      "Not Done")
                                 ).length > 0 &&
                                 selectedHistoryItems.length ===
-                                  filteredHistoryData.filter(
-                                    (item) =>
-                                      isEmpty(item["col15"]) ||
-                                      (item["col15"].toString().trim() !==
-                                        "Done" &&
-                                        item["col15"].toString().trim() !==
-                                          "Not Done")
-                                  ).length
+                                filteredHistoryData.filter(
+                                  (item) =>
+                                    isEmpty(item["col15"]) ||
+                                    (item["col15"].toString().trim() !==
+                                      "Done" &&
+                                      item["col15"].toString().trim() !==
+                                      "Not Done")
+                                ).length
                               }
                               onChange={(e) => {
                                 const unprocessedItems =
@@ -1602,7 +1600,7 @@ const handleCameraCapture = useCallback((id, file) => {
                                       (item["col15"].toString().trim() !==
                                         "Done" &&
                                         item["col15"].toString().trim() !==
-                                          "Not Done")
+                                        "Not Done")
                                   );
                                 if (e.target.checked) {
                                   setSelectedHistoryItems(unprocessedItems);
@@ -1738,7 +1736,7 @@ const handleCameraCapture = useCallback((id, file) => {
                                   <div className="flex items-center justify-between">
                                     <div>
                                       {!isEmpty(history["col15"]) &&
-                                      history["col15"].toString().trim() ===
+                                        history["col15"].toString().trim() ===
                                         "Done" ? (
                                         <div className="flex items-center">
                                           <div className="h-4 w-4 rounded border-gray-300 text-green-600 bg-green-100 mr-2 flex items-center justify-center">
@@ -1754,7 +1752,7 @@ const handleCameraCapture = useCallback((id, file) => {
                                         </div>
                                       ) : !isEmpty(history["col15"]) &&
                                         history["col15"].toString().trim() ===
-                                          "Not Done" ? (
+                                        "Not Done" ? (
                                         <div className="flex items-center text-red-500 text-sm">
                                           <div className="h-4 w-4 rounded border-gray-300 bg-red-100 mr-2 flex items-center justify-center">
                                             <span className="text-xs text-red-600">
@@ -1788,41 +1786,38 @@ const handleCameraCapture = useCallback((id, file) => {
                             {userRole === "admin" && (
                               <td className="px-3 py-4 w-12">
                                 {!isEmpty(history["col15"]) &&
-                                (history["col15"].toString().trim() ===
-                                  "Done" ||
-                                  history["col15"].toString().trim() ===
+                                  (history["col15"].toString().trim() ===
+                                    "Done" ||
+                                    history["col15"].toString().trim() ===
                                     "Not Done") ? (
                                   // Already processed - show status only
                                   <div className="flex flex-col items-center">
                                     <div
-                                      className={`h-4 w-4 rounded border-gray-300 ${
-                                        history["col15"].toString().trim() ===
+                                      className={`h-4 w-4 rounded border-gray-300 ${history["col15"].toString().trim() ===
                                         "Done"
-                                          ? "text-green-600 bg-green-100"
-                                          : "text-red-600 bg-red-100"
-                                      }`}
+                                        ? "text-green-600 bg-green-100"
+                                        : "text-red-600 bg-red-100"
+                                        }`}
                                     >
                                       <span
-                                        className={`text-xs ${
-                                          history["col15"].toString().trim() ===
+                                        className={`text-xs ${history["col15"].toString().trim() ===
                                           "Done"
-                                            ? "text-green-600"
-                                            : "text-red-600"
-                                        }`}
+                                          ? "text-green-600"
+                                          : "text-red-600"
+                                          }`}
                                       >
                                         {history["col15"].toString().trim() ===
-                                        "Done"
+                                          "Done"
                                           ? "✓"
                                           : "✗"}
                                       </span>
                                     </div>
                                     <span
-                                      className={`text-xs mt-1 text-center break-words ${
-                                        history["col15"].toString().trim() ===
+                                      className={`text-xs mt-1 text-center break-words ${history["col15"].toString().trim() ===
                                         "Done"
-                                          ? "text-green-600"
-                                          : "text-red-600"
-                                      }`}
+                                        ? "text-green-600"
+                                        : "text-red-600"
+                                        }`}
                                     >
                                       {history["col15"].toString().trim()}
                                     </span>
@@ -1842,9 +1837,9 @@ const handleCameraCapture = useCallback((id, file) => {
                                             (item) => item._id === history._id
                                           )
                                             ? prev.filter(
-                                                (item) =>
-                                                  item._id !== history._id
-                                              )
+                                              (item) =>
+                                                item._id !== history._id
+                                            )
                                             : [...prev, history]
                                         );
                                       }}
@@ -1961,13 +1956,12 @@ const handleCameraCapture = useCallback((id, file) => {
                             </td>
                             <td className="px-3 py-4 bg-blue-50 min-w-[80px]">
                               <span
-                                className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full break-words ${
-                                  history["col12"] === "Yes"
-                                    ? "bg-green-100 text-green-800"
-                                    : history["col12"] === "No"
+                                className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full break-words ${history["col12"] === "Yes"
+                                  ? "bg-green-100 text-green-800"
+                                  : history["col12"] === "No"
                                     ? "bg-red-100 text-red-800"
                                     : "bg-gray-100 text-gray-800"
-                                }`}
+                                  }`}
                               >
                                 {history["col12"] || "—"}
                               </span>
@@ -2024,9 +2018,9 @@ const handleCameraCapture = useCallback((id, file) => {
                           className="px-6 py-4 text-center text-gray-500"
                         >
                           {searchTerm ||
-                          selectedMembers.length > 0 ||
-                          startDate ||
-                          endDate
+                            selectedMembers.length > 0 ||
+                            startDate ||
+                            endDate
                             ? "No historical records matching your filters"
                             : "No completed records found"}
                         </td>
@@ -2108,60 +2102,59 @@ const handleCameraCapture = useCallback((id, file) => {
                         return (
                           <tr
                             key={account._id}
-                            className={`${
-                              isSelected ? "bg-purple-50" : ""
-                            } hover:bg-gray-50`}
+                            className={`${isSelected ? "bg-purple-50" : ""
+                              } hover:bg-gray-50`}
                           >
-                           <td className="px-3 py-4 w-12 relative">
-  {/* Status Label - Fixed positioning */}
-  <div className="absolute -top-2 -left-1 right-0 mx-auto z-10 whitespace-nowrap text-xs font-bold px-2 py-1 rounded-md shadow-md w-fit">
-    {(() => {
-      const dateStr = account["col6"] || "";
-      if (!dateStr) return null;
-      
-      const datePart = dateStr.split(" ")[0];
-      const parsedDate = parseDateFromDDMMYYYY(datePart);
-      if (!parsedDate) return null;
-      
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      const taskDate = new Date(parsedDate);
-      taskDate.setHours(0, 0, 0, 0);
-      
-      const timeDiff = taskDate.getTime() - today.getTime();
-      const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-      
-      if (dayDiff === 0) {
-        return (
-          <div className="bg-amber-500 text-white text-center px-2 min-w-[65px]">
-            TODAY
-          </div>
-        );
-      } else if (dayDiff < 0) {
-        return (
-          <div className="bg-red-600 text-white text-center px-2 min-w-[65px]">
-            OVERDUE
-          </div>
-        );
-      } else if (dayDiff > 0) {
-        return (
-          <div className="bg-blue-500 text-white text-center px-2 min-w-[65px]">
-            UPCOMING
-          </div>
-        );
-      }
-      return null;
-    })()}
-  </div>
-  
-  <input
-    type="checkbox"
-    className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-    checked={isSelected}
-    onChange={(e) => handleCheckboxClick(e, account._id)}
-  />
-</td>
+                            <td className="px-3 py-4 w-12 relative">
+                              {/* Status Label - Fixed positioning */}
+                              <div className="absolute -top-2 -left-1 right-0 mx-auto z-10 whitespace-nowrap text-xs font-bold px-2 py-1 rounded-md shadow-md w-fit">
+                                {(() => {
+                                  const dateStr = account["col6"] || "";
+                                  if (!dateStr) return null;
+
+                                  const datePart = dateStr.split(" ")[0];
+                                  const parsedDate = parseDateFromDDMMYYYY(datePart);
+                                  if (!parsedDate) return null;
+
+                                  const today = new Date();
+                                  today.setHours(0, 0, 0, 0);
+
+                                  const taskDate = new Date(parsedDate);
+                                  taskDate.setHours(0, 0, 0, 0);
+
+                                  const timeDiff = taskDate.getTime() - today.getTime();
+                                  const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+                                  if (dayDiff === 0) {
+                                    return (
+                                      <div className="bg-amber-500 text-white text-center px-2 min-w-[65px]">
+                                        TODAY
+                                      </div>
+                                    );
+                                  } else if (dayDiff < 0) {
+                                    return (
+                                      <div className="bg-red-600 text-white text-center px-2 min-w-[65px]">
+                                        OVERDUE
+                                      </div>
+                                    );
+                                  } else if (dayDiff > 0) {
+                                    return (
+                                      <div className="bg-blue-500 text-white text-center px-2 min-w-[65px]">
+                                        UPCOMING
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+                              </div>
+
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                checked={isSelected}
+                                onChange={(e) => handleCheckboxClick(e, account._id)}
+                              />
+                            </td>
                             <td className="px-3 py-4 min-w-[100px]">
                               <div className="text-sm text-gray-900 break-words">
                                 {account["col1"] || "—"}
@@ -2276,38 +2269,38 @@ const handleCameraCapture = useCallback((id, file) => {
                                 className="border rounded-md px-2 py-1 w-full border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm break-words"
                               />
                             </td>
-             {/* Upload Image Column - DESKTOP */}
-<td className={`px-6 py-4 min-w-[150px] ${!account["col17"] ? "bg-orange-50" : ""}`}>
-  {account.image ? (
-    // ✅ SHOW UPLOADED IMAGE
-    <div className="flex items-center">
-      <img
-        src={typeof account.image === "string" ? account.image : URL.createObjectURL(account.image)}
-        alt="Receipt"
-        className="h-10 w-10 object-cover rounded-md mr-2 flex-shrink-0"
-      />
-      <div className="flex flex-col min-w-0">
-        <span className="text-xs text-gray-500 break-words">
-          {account.image instanceof File ? account.image.name : "Uploaded"}
-        </span>
-        {account.image instanceof File ? (
-          <span className="text-xs text-green-600">Ready to upload</span>
-        ) : (
-          <button
-            className="text-xs text-purple-600 hover:text-purple-800 break-words"
-            onClick={() => window.open(account.image, "_blank")}
-          >
-            View Image
-          </button>
-        )}
-      </div>
-    </div>
-  ) : (
-    // ✅ SHOW UPLOAD OPTIONS
-    <div className="flex flex-col gap-2">
-      
-      {/* ✅ CAMERA BUTTON - Opens Modal */}
-      {/* <button
+                            {/* Upload Image Column - DESKTOP */}
+                            <td className={`px-6 py-4 min-w-[150px] ${!account["col17"] ? "bg-orange-50" : ""}`}>
+                              {account.image ? (
+                                // ✅ SHOW UPLOADED IMAGE
+                                <div className="flex items-center">
+                                  <img
+                                    src={typeof account.image === "string" ? account.image : URL.createObjectURL(account.image)}
+                                    alt="Receipt"
+                                    className="h-10 w-10 object-cover rounded-md mr-2 flex-shrink-0"
+                                  />
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="text-xs text-gray-500 break-words">
+                                      {account.image instanceof File ? account.image.name : "Uploaded"}
+                                    </span>
+                                    {account.image instanceof File ? (
+                                      <span className="text-xs text-green-600">Ready to upload</span>
+                                    ) : (
+                                      <button
+                                        className="text-xs text-purple-600 hover:text-purple-800 break-words"
+                                        onClick={() => window.open(account.image, "_blank")}
+                                      >
+                                        View Image
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              ) : (
+                                // ✅ SHOW UPLOAD OPTIONS
+                                <div className="flex flex-col gap-2">
+
+                                  {/* ✅ CAMERA BUTTON - Opens Modal */}
+                                  {/* <button
         onClick={() => {
           if (!isSelected) return;
           console.log("📸 Opening camera for:", account._id);
@@ -2325,37 +2318,36 @@ const handleCameraCapture = useCallback((id, file) => {
         <span>{isCameraLoading ? "Loading..." : "Take Photo"}</span>
       </button> */}
 
-      {/* ✅ FILE UPLOAD BUTTON - Opens File Picker */}
-      <label
-        htmlFor={`upload-${account._id}`}
-        className={`flex items-center justify-start px-2 py-1 rounded text-xs font-medium transition-colors ${
-          isSelected
-            ? account["col9"]?.toUpperCase() === "YES"
-              ? "text-red-600 hover:text-red-800 hover:bg-red-50 cursor-pointer"
-              : "text-purple-600 hover:text-purple-800 hover:bg-purple-50 cursor-pointer"
-            : "text-gray-400 cursor-not-allowed"
-        }`}
-      >
-        <Upload className="h-4 w-4 mr-1 flex-shrink-0" />
-        <span className="break-words">
-          {account["col9"]?.toUpperCase() === "YES" ? "Upload (Required*)" : "Upload from File"}
-        </span>
-      </label>
+                                  {/* ✅ FILE UPLOAD BUTTON - Opens File Picker */}
+                                  <label
+                                    htmlFor={`upload-${account._id}`}
+                                    className={`flex items-center justify-start px-2 py-1 rounded text-xs font-medium transition-colors ${isSelected
+                                      ? account["col9"]?.toUpperCase() === "YES"
+                                        ? "text-red-600 hover:text-red-800 hover:bg-red-50 cursor-pointer"
+                                        : "text-purple-600 hover:text-purple-800 hover:bg-purple-50 cursor-pointer"
+                                      : "text-gray-400 cursor-not-allowed"
+                                      }`}
+                                  >
+                                    <Upload className="h-4 w-4 mr-1 flex-shrink-0" />
+                                    <span className="break-words">
+                                      {account["col9"]?.toUpperCase() === "YES" ? "Upload (Required*)" : "Upload from File"}
+                                    </span>
+                                  </label>
 
-      <input
-        id={`upload-${account._id}`}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => {
-          console.log("📁 File selected for:", account._id);
-          handleImageUpload(account._id, e);
-        }}
-        disabled={!isSelected}
-      />
-    </div>
-  )}
-</td>
+                                  <input
+                                    id={`upload-${account._id}`}
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      console.log("📁 File selected for:", account._id);
+                                      handleImageUpload(account._id, e);
+                                    }}
+                                    disabled={!isSelected}
+                                  />
+                                </div>
+                              )}
+                            </td>
                           </tr>
                         );
                       })
@@ -2383,9 +2375,8 @@ const handleCameraCapture = useCallback((id, file) => {
                     return (
                       <div
                         key={account._id}
-                        className={`bg-white border border-gray-200 rounded-lg p-4 shadow-sm ${
-                          isSelected ? "bg-purple-50 border-purple-200" : ""
-                        }`}
+                        className={`bg-white border border-gray-200 rounded-lg p-4 shadow-sm ${isSelected ? "bg-purple-50 border-purple-200" : ""
+                          }`}
                       >
                         <div className="space-y-3">
                           {/* Checkbox */}
@@ -2567,44 +2558,44 @@ const handleCameraCapture = useCallback((id, file) => {
                             />
                           </div>
 
-          {/* ✅ MOBILE: Upload Image Section */}
-<div className="border-b pb-3">
-  <span className="font-medium text-gray-700 block mb-2">Upload Image:</span>
-  
-  {account.image ? (
-    // ✅ SHOW UPLOADED IMAGE
-    <div className="flex items-center mt-2">
-      <img
-        src={
-          typeof account.image === "string"
-            ? account.image
-            : URL.createObjectURL(account.image)
-        }
-        alt="Receipt"
-        className="h-12 w-12 object-cover rounded-md mr-3"
-      />
-      <div className="flex flex-col">
-        <span className="text-sm text-gray-700 font-medium">
-          {account.image instanceof File ? account.image.name : "Uploaded Image"}
-        </span>
-        {account.image instanceof File ? (
-          <span className="text-xs text-green-600">✓ Ready to upload</span>
-        ) : (
-          <button
-            className="text-xs text-purple-600 hover:text-purple-800 text-left"
-            onClick={() => window.open(account.image, "_blank")}
-          >
-            View Full Image →
-          </button>
-        )}
-      </div>
-    </div>
-  ) : (
-    // ✅ SHOW UPLOAD OPTIONS
-    <div className="flex flex-col gap-3 mt-2">
-      
-      {/* ✅ CAMERA BUTTON */}
-      {/* <button
+                          {/* ✅ MOBILE: Upload Image Section */}
+                          <div className="border-b pb-3">
+                            <span className="font-medium text-gray-700 block mb-2">Upload Image:</span>
+
+                            {account.image ? (
+                              // ✅ SHOW UPLOADED IMAGE
+                              <div className="flex items-center mt-2">
+                                <img
+                                  src={
+                                    typeof account.image === "string"
+                                      ? account.image
+                                      : URL.createObjectURL(account.image)
+                                  }
+                                  alt="Receipt"
+                                  className="h-12 w-12 object-cover rounded-md mr-3"
+                                />
+                                <div className="flex flex-col">
+                                  <span className="text-sm text-gray-700 font-medium">
+                                    {account.image instanceof File ? account.image.name : "Uploaded Image"}
+                                  </span>
+                                  {account.image instanceof File ? (
+                                    <span className="text-xs text-green-600">✓ Ready to upload</span>
+                                  ) : (
+                                    <button
+                                      className="text-xs text-purple-600 hover:text-purple-800 text-left"
+                                      onClick={() => window.open(account.image, "_blank")}
+                                    >
+                                      View Full Image →
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              // ✅ SHOW UPLOAD OPTIONS
+                              <div className="flex flex-col gap-3 mt-2">
+
+                                {/* ✅ CAMERA BUTTON */}
+                                {/* <button
         onClick={() => {
           if (!isSelected) return;
           console.log("📸 Opening camera for:", account._id);
@@ -2622,42 +2613,41 @@ const handleCameraCapture = useCallback((id, file) => {
         <span>{isCameraLoading ? "Loading Camera..." : "📸 Take Photo"}</span>
       </button> */}
 
-      {/* ✅ FILE UPLOAD BUTTON */}
-      <label 
-        className={`flex items-center justify-center px-4 py-3 rounded-lg border-2 text-sm font-semibold transition-all ${
-          isSelected 
-            ? account["col9"]?.toUpperCase() === "YES" 
-              ? "bg-red-50 border-red-300 text-red-700 hover:bg-red-100 hover:shadow-md active:scale-95 cursor-pointer" 
-              : "bg-purple-50 border-purple-300 text-purple-700 hover:bg-purple-100 hover:shadow-md active:scale-95 cursor-pointer"
-            : "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
-        } ${!isSelected ? "pointer-events-none" : ""}`}
-      >
-        <Upload className="h-5 w-5 mr-2" />
-        <span>
-          {account["col9"]?.toUpperCase() === "YES" 
-            ? "📁 Upload (Required*)" 
-            : "📁 Upload from Gallery"}
-        </span>
-        <input
-          type="file"
-          className="hidden"
-          accept="image/*"
-          onChange={(e) => {
-            console.log("📁 File selected for:", account._id);
-            handleImageUpload(account._id, e);
-          }}
-          disabled={!isSelected}
-        />
-      </label>
+                                {/* ✅ FILE UPLOAD BUTTON */}
+                                <label
+                                  className={`flex items-center justify-center px-4 py-3 rounded-lg border-2 text-sm font-semibold transition-all ${isSelected
+                                    ? account["col9"]?.toUpperCase() === "YES"
+                                      ? "bg-red-50 border-red-300 text-red-700 hover:bg-red-100 hover:shadow-md active:scale-95 cursor-pointer"
+                                      : "bg-purple-50 border-purple-300 text-purple-700 hover:bg-purple-100 hover:shadow-md active:scale-95 cursor-pointer"
+                                    : "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
+                                    } ${!isSelected ? "pointer-events-none" : ""}`}
+                                >
+                                  <Upload className="h-5 w-5 mr-2" />
+                                  <span>
+                                    {account["col9"]?.toUpperCase() === "YES"
+                                      ? "📁 Upload (Required*)"
+                                      : "📁 Upload from Gallery"}
+                                  </span>
+                                  <input
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                      console.log("📁 File selected for:", account._id);
+                                      handleImageUpload(account._id, e);
+                                    }}
+                                    disabled={!isSelected}
+                                  />
+                                </label>
 
-      {account["col9"]?.toUpperCase() === "YES" && (
-        <p className="text-xs text-red-600 text-center">
-          ⚠️ Image upload is mandatory for this task
-        </p>
-      )}
-    </div>
-  )}
-</div>
+                                {account["col9"]?.toUpperCase() === "YES" && (
+                                  <p className="text-xs text-red-600 text-center">
+                                    ⚠️ Image upload is mandatory for this task
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -2674,175 +2664,175 @@ const handleCameraCapture = useCallback((id, file) => {
           )}
         </div>
         {isCameraOpen && (
-  <div className="fixed inset-0 bg-black z-[9999] flex flex-col">
-    
-    {/* Header */}
-    <div className="bg-black text-white px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between border-b border-gray-800">
-      <div className="flex items-center gap-2 sm:gap-3">
-        <Camera className="w-5 h-5 sm:w-6 sm:h-6" />
-        <span className="font-medium text-base sm:text-lg">Take Photo</span>
-      </div>
-      <button
-        onClick={stopCamera}
-        className="p-2 hover:bg-white/10 rounded-full transition-colors"
-        aria-label="Close camera"
-      >
-        <X className="w-6 h-6 sm:w-7 sm:h-7" />
-      </button>
-    </div>
+          <div className="fixed inset-0 bg-black z-[9999] flex flex-col">
 
-    {/* Video Preview Area */}
-    <div className="flex-1 relative bg-black overflow-hidden">
-      <video
-        ref={videoRef}
-        className="w-full h-full object-contain bg-black"
-        autoPlay
-        playsInline
-        muted
-        style={{
-          WebkitTransform: 'scaleX(-1)',
-          transform: 'scaleX(-1)'
-        }}
-      />
-
-      {/* Loading Overlay */}
-      {isCameraLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-90">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-white border-t-transparent mx-auto mb-4"></div>
-            <p className="text-white font-medium text-base sm:text-lg">Initializing camera...</p>
-            <p className="text-gray-300 text-sm sm:text-base mt-2">Please wait</p>
-          </div>
-        </div>
-      )}
-
-      {/* Camera Guide/Overlay */}
-      {!isCameraLoading && !cameraError && (
-        <>
-          {/* Desktop guide (crosshair) */}
-          <div className="hidden sm:block absolute inset-0 pointer-events-none flex items-center justify-center">
-            <div className="relative">
-              <div className="border-2 border-white/60 border-dashed rounded-xl w-80 h-80"></div>
-              <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white/40"></div>
-              <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-white/40"></div>
-            </div>
-          </div>
-          
-          {/* Mobile guide (simpler) */}
-          <div className="sm:hidden absolute inset-0 pointer-events-none flex items-center justify-center">
-            <div className="border-2 border-white/50 border-dashed rounded-lg w-4/5 h-1/2"></div>
-          </div>
-        </>
-      )}
-
-      {/* Error Display */}
-      {cameraError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/95 p-4">
-          <div className="max-w-md text-center">
-            <div className="w-16 h-16 bg-red-900/80 rounded-full flex items-center justify-center mx-auto mb-4">
-              <X className="w-8 h-8 text-white" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">Camera Error</h3>
-            <p className="text-gray-200 mb-4">{cameraError}</p>
-            <div className="flex gap-3 justify-center">
+            {/* Header */}
+            <div className="bg-black text-white px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between border-b border-gray-800">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Camera className="w-5 h-5 sm:w-6 sm:h-6" />
+                <span className="font-medium text-base sm:text-lg">Take Photo</span>
+              </div>
               <button
                 onClick={stopCamera}
-                className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600"
+                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                aria-label="Close camera"
               >
-                Close
-              </button>
-              <button
-                onClick={startCamera}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Try Again
+                <X className="w-6 h-6 sm:w-7 sm:h-7" />
               </button>
             </div>
-          </div>
-        </div>
-      )}
-    </div>
 
-    {/* Camera Controls */}
-    <div className="bg-gradient-to-t from-black/95 to-black/80 p-4 sm:p-6">
-      {/* Capture Button (Center) */}
-      <div className="flex justify-center mb-4">
-        <button
-          onClick={capturePhoto}
-          disabled={isCameraLoading || !!cameraError}
-          className={`
+            {/* Video Preview Area */}
+            <div className="flex-1 relative bg-black overflow-hidden">
+              <video
+                ref={videoRef}
+                className="w-full h-full object-contain bg-black"
+                autoPlay
+                playsInline
+                muted
+                style={{
+                  WebkitTransform: 'scaleX(-1)',
+                  transform: 'scaleX(-1)'
+                }}
+              />
+
+              {/* Loading Overlay */}
+              {isCameraLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-90">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-white border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-white font-medium text-base sm:text-lg">Initializing camera...</p>
+                    <p className="text-gray-300 text-sm sm:text-base mt-2">Please wait</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Camera Guide/Overlay */}
+              {!isCameraLoading && !cameraError && (
+                <>
+                  {/* Desktop guide (crosshair) */}
+                  <div className="hidden sm:block absolute inset-0 pointer-events-none flex items-center justify-center">
+                    <div className="relative">
+                      <div className="border-2 border-white/60 border-dashed rounded-xl w-80 h-80"></div>
+                      <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white/40"></div>
+                      <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-white/40"></div>
+                    </div>
+                  </div>
+
+                  {/* Mobile guide (simpler) */}
+                  <div className="sm:hidden absolute inset-0 pointer-events-none flex items-center justify-center">
+                    <div className="border-2 border-white/50 border-dashed rounded-lg w-4/5 h-1/2"></div>
+                  </div>
+                </>
+              )}
+
+              {/* Error Display */}
+              {cameraError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/95 p-4">
+                  <div className="max-w-md text-center">
+                    <div className="w-16 h-16 bg-red-900/80 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <X className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">Camera Error</h3>
+                    <p className="text-gray-200 mb-4">{cameraError}</p>
+                    <div className="flex gap-3 justify-center">
+                      <button
+                        onClick={stopCamera}
+                        className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600"
+                      >
+                        Close
+                      </button>
+                      <button
+                        onClick={startCamera}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      >
+                        Try Again
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Camera Controls */}
+            <div className="bg-gradient-to-t from-black/95 to-black/80 p-4 sm:p-6">
+              {/* Capture Button (Center) */}
+              <div className="flex justify-center mb-4">
+                <button
+                  onClick={capturePhoto}
+                  disabled={isCameraLoading || !!cameraError}
+                  className={`
             relative w-20 h-20 sm:w-24 sm:h-24 rounded-full 
             flex items-center justify-center
             ${isCameraLoading || cameraError
-              ? 'bg-gray-600 cursor-not-allowed'
-              : 'bg-white hover:bg-gray-100 active:scale-95'
-            }
+                      ? 'bg-gray-600 cursor-not-allowed'
+                      : 'bg-white hover:bg-gray-100 active:scale-95'
+                    }
             transition-all duration-200
             shadow-2xl
           `}
-          aria-label="Capture photo"
-        >
-          {/* Outer ring */}
-          <div className="absolute inset-0 border-4 border-white/30 rounded-full"></div>
-          
-          {/* Inner circle */}
-          <div className={`
+                  aria-label="Capture photo"
+                >
+                  {/* Outer ring */}
+                  <div className="absolute inset-0 border-4 border-white/30 rounded-full"></div>
+
+                  {/* Inner circle */}
+                  <div className={`
             w-16 h-16 sm:w-20 sm:h-20 rounded-full
             ${isCameraLoading || cameraError ? 'bg-gray-500' : 'bg-white'}
             flex items-center justify-center
           `}>
-            {isCameraLoading ? (
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-black border-t-transparent"></div>
-            ) : cameraError ? (
-              <X className="w-8 h-8 sm:w-10 sm:h-10 text-black" />
-            ) : (
-              <Camera className="w-8 h-8 sm:w-10 sm:h-10 text-black" />
+                    {isCameraLoading ? (
+                      <div className="animate-spin rounded-full h-8 w-8 border-2 border-black border-t-transparent"></div>
+                    ) : cameraError ? (
+                      <X className="w-8 h-8 sm:w-10 sm:h-10 text-black" />
+                    ) : (
+                      <Camera className="w-8 h-8 sm:w-10 sm:h-10 text-black" />
+                    )}
+                  </div>
+                </button>
+              </div>
+
+              {/* Instructions */}
+              <div className="text-center">
+                <p className="text-white/80 text-sm sm:text-base">
+                  {isCameraLoading
+                    ? "Initializing camera..."
+                    : cameraError
+                      ? "Fix camera error to continue"
+                      : "Center the subject and tap the button above"
+                  }
+                </p>
+                <p className="text-white/60 text-xs sm:text-sm mt-2">
+                  {currentCaptureId ? `Task: ${currentCaptureId}` : "No task selected"}
+                </p>
+              </div>
+
+              {/* Additional Controls for Desktop */}
+              <div className="hidden sm:flex justify-between items-center mt-4 pt-4 border-t border-white/20">
+                <div className="text-white/70 text-sm">
+                  Press <kbd className="px-2 py-1 bg-gray-800 rounded">Esc</kbd> to close
+                </div>
+                <div className="text-white/70 text-sm">
+                  Use <kbd className="px-2 py-1 bg-gray-800 rounded">Space</kbd> to capture
+                </div>
+              </div>
+            </div>
+
+            {/* Keyboard Shortcuts for Desktop */}
+            {!isCameraLoading && !cameraError && (
+              <div className="hidden">
+                {/* Hidden button for keyboard capture */}
+                <button
+                  ref={captureBtnRef}
+                  onClick={capturePhoto}
+                  style={{ display: 'none' }}
+                >
+                  Capture
+                </button>
+              </div>
             )}
           </div>
-        </button>
-      </div>
-
-      {/* Instructions */}
-      <div className="text-center">
-        <p className="text-white/80 text-sm sm:text-base">
-          {isCameraLoading 
-            ? "Initializing camera..." 
-            : cameraError 
-              ? "Fix camera error to continue" 
-              : "Center the subject and tap the button above"
-          }
-        </p>
-        <p className="text-white/60 text-xs sm:text-sm mt-2">
-          {currentCaptureId ? `Task: ${currentCaptureId}` : "No task selected"}
-        </p>
-      </div>
-
-      {/* Additional Controls for Desktop */}
-      <div className="hidden sm:flex justify-between items-center mt-4 pt-4 border-t border-white/20">
-        <div className="text-white/70 text-sm">
-          Press <kbd className="px-2 py-1 bg-gray-800 rounded">Esc</kbd> to close
-        </div>
-        <div className="text-white/70 text-sm">
-          Use <kbd className="px-2 py-1 bg-gray-800 rounded">Space</kbd> to capture
-        </div>
-      </div>
-    </div>
-
-    {/* Keyboard Shortcuts for Desktop */}
-    {!isCameraLoading && !cameraError && (
-      <div className="hidden">
-        {/* Hidden button for keyboard capture */}
-        <button
-          ref={captureBtnRef}
-          onClick={capturePhoto}
-          style={{ display: 'none' }}
-        >
-          Capture
-        </button>
-      </div>
-    )}
-  </div>
-)}
+        )}
       </div>
     </AdminLayout>
   );

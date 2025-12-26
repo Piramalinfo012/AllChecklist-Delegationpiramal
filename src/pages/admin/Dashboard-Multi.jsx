@@ -35,7 +35,7 @@ export default function AdminDashboard() {
 
   // Apps Script URL - UPDATE THIS WITH YOUR DEPLOYED APPS SCRIPT URL
   const APPS_SCRIPT_URL =
-    "https://script.google.com/macros/s/AKfycbwcmMvtW0SIzCnaVf_b5Z2-RXc6Ujo9i0uJAfwLilw7s3I9CIgBpE8RENgy8abKV08G/exec"
+    "https://script.google.com/macros/s/AKfycbyaBCq6ZKHhOZBXRp9qw3hqrXh_aIOPvIHh_G41KtzPovhjl-UjEgj75Ok6gwJhrPOX/exec"
 
   // State for department data
   const [departmentData, setDepartmentData] = useState({
@@ -299,7 +299,7 @@ export default function AdminDashboard() {
 
       // Fallback to gviz only if Apps Script completely fails
       const response = await fetch(
-        `https://script.google.com/macros/s/AKfycbwcmMvtW0SIzCnaVf_b5Z2-RXc6Ujo9i0uJAfwLilw7s3I9CIgBpE8RENgy8abKV08G/exec/gviz/tq?tqx=out:json&sheet=MASTER`
+        `https://script.google.com/macros/s/AKfycbyaBCq6ZKHhOZBXRp9qw3hqrXh_aIOPvIHh_G41KtzPovhjl-UjEgj75Ok6gwJhrPOX/exec/gviz/tq?tqx=out:json&sheet=MASTER`
       );
 
       if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
@@ -346,6 +346,7 @@ export default function AdminDashboard() {
     }
 
     const sheetName = dashboardType === "delegation" ? "DELEGATION" : department
+    const archiveSheetName = "Archieve"
     const cacheKey = `${sheetName}_${dashboardType}`
 
     // Check cache first - instant return
@@ -357,10 +358,28 @@ export default function AdminDashboard() {
 
     try {
       // Fetch data without any loading states
-      const data = await fetchDataFromAppsScript(sheetName)
+      // Use Promise.all to fetch both sheets if in checklist mode
+      const fetchPromises = [fetchDataFromAppsScript(sheetName)]
+
+      if (dashboardType === "checklist") {
+        fetchPromises.push(fetchDataFromAppsScript(archiveSheetName).catch(err => {
+          console.error("Archive fetch failed:", err)
+          return null // Return null if archive fails so we can still show main data
+        }))
+      }
+
+      const results = await Promise.all(fetchPromises)
+      const data = results[0]
+      const archiveData = results[1]
 
       if (!data?.table?.rows) {
         throw new Error("Invalid data structure")
+      }
+
+      // Handle archive count
+      let archiveTotalCount = 0
+      if (dashboardType === "checklist" && archiveData?.table?.rows) {
+        archiveTotalCount = Math.max(0, archiveData.table.rows.length - 1)
       }
 
       // Get user info once
@@ -389,10 +408,20 @@ export default function AdminDashboard() {
       const staffMap = new Map()
       const processedRows = []
 
+      // Archive data rows
+      let archiveRows = (dashboardType === "checklist" && archiveData?.table?.rows)
+        ? archiveData.table.rows.slice(1) // Skip archive header
+        : [];
+
+      // Combine primary rows (skipping header) and archive rows
+      const allSourceRows = [
+        ...data.table.rows.slice(1).map(r => ({ row: r, isArchive: false })),
+        ...archiveRows.map(r => ({ row: r, isArchive: true }))
+      ];
+
       // Single ultra-fast loop
-      const rows = data.table.rows
-      for (let i = 1, len = rows.length; i < len; i++) {
-        const row = rows[i]
+      for (let i = 0, len = allSourceRows.length; i < len; i++) {
+        const { row, isArchive } = allSourceRows[i]
         if (!row?.c) continue
 
         const c = row.c
@@ -407,6 +436,8 @@ export default function AdminDashboard() {
 
         // Quick date check
         const taskStartDateValue = c[6]?.v
+        // For archive rows, we might relax the date requirement if they are already completed
+        // but for now, let's stick to the structure.
         if (!taskStartDateValue) continue
 
         const taskStartDate = parseGoogleSheetsDate(taskStartDateValue)
@@ -418,8 +449,22 @@ export default function AdminDashboard() {
           staffMap.set(assignedTo, { name: assignedTo, totalTasks: 0, completedTasks: 0, pendingTasks: 0, progress: 0 })
         }
 
+        // Checklist logic filtering
+        if (dashboardType === "checklist" && !isArchive) {
+          // Skip future checklist tasks
+          if (taskStartDateObj.getTime() > today.getTime() + 86400000) { // tomorrow
+            // Wait, tomorrow is today + 1 day. existing logic was <= tomorrow for processing
+            // let's stick to existing logic: dashboard.jsx used tomorrow for processing, today for counting.
+          }
+          // The previous code had: if (!taskStartDateObj || taskStartDateObj > tomorrow) continue
+          const tomorrow = new Date(today)
+          tomorrow.setDate(tomorrow.getDate() + 1)
+          if (taskStartDateObj.getTime() > tomorrow.getTime()) continue
+        }
+
         // Completion check
-        const completionDateValue = dashboardType === "delegation" ? c[11]?.v : c[10]?.v
+        const completionRowIndex = dashboardType === "delegation" ? 11 : 10
+        const completionDateValue = c[completionRowIndex]?.v
         const completionDate = completionDateValue ? parseGoogleSheetsDate(completionDateValue) : ""
         const status = completionDate ? "completed" : (taskStartDateObj.getTime() < todayTime ? "overdue" : "pending")
 
@@ -432,15 +477,28 @@ export default function AdminDashboard() {
           dueDate: taskStartDate,
           status,
           frequency: c[7]?.v || "one-time",
+          isArchive,
+          shouldCount: shouldCountInStats
         })
 
-        // Update staff
+        // Update staff tracking
         const staff = staffMap.get(assignedTo)
-        staff.totalTasks++
 
-        // Count only tasks up to today
-        if (taskStartDateObj.getTime() <= todayTime) {
+        // Count logic: for checklist, archive tasks ALWAYS count, or checklist tasks due <= today
+        let shouldCountInStats = false
+        if (dashboardType === "delegation") {
+          shouldCountInStats = true
+        } else {
+          if (isArchive) {
+            shouldCountInStats = true
+          } else {
+            shouldCountInStats = (taskStartDateObj.getTime() <= todayTime)
+          }
+        }
+
+        if (shouldCountInStats) {
           totalTasks++
+          staff.totalTasks++
 
           if (status === "completed") {
             completedTasks++

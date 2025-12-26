@@ -193,7 +193,7 @@ export default function AssignTask() {
   // Function to fetch options from master sheet
   const fetchMasterSheetOptions = async () => {
     try {
-      const masterSheetId = "1T6F0MMLbJALv79ka8hdr-Oo_Jtjn9oXT7PLMdq_jGB8";
+      const masterSheetId = "1pZx7O0Zfz52Gj-jon_UELVvueGcKPV2u0ONVq1IU3EU";
       const masterSheetName = "master";
 
       const url = `https://docs.google.com/spreadsheets/d/${masterSheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(
@@ -313,74 +313,74 @@ export default function AssignTask() {
     fetchMasterSheetOptions();
   }, []);
 
-// Add a function to get the last task ID from the specified sheet
-const getLastTaskId = async (sheetName) => {
-  try {
-    const sheetId = "1T6F0MMLbJALv79ka8hdr-Oo_Jtjn9oXT7PLMdq_jGB8";
-    
-    // Try with the provided sheet name first, then try alternate case
-    const sheetNamesToTry = [
-      sheetName,
-      sheetName.toUpperCase(),
-      sheetName.toLowerCase(),
-      sheetName.charAt(0).toUpperCase() + sheetName.slice(1).toLowerCase()
-    ];
-    
-    let data = null;
-    let successfulSheetName = null;
-    
-    for (const trySheetName of sheetNamesToTry) {
-      try {
-        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(
-          trySheetName
-        )}`;
+  // Add a function to get the last task ID from the specified sheet
+  const getLastTaskId = async (sheetName) => {
+    try {
+      const sheetId = "1pZx7O0Zfz52Gj-jon_UELVvueGcKPV2u0ONVq1IU3EU";
 
-        const response = await fetch(url);
-        if (!response.ok) continue;
+      // Try with the provided sheet name first, then try alternate case
+      const sheetNamesToTry = [
+        sheetName,
+        sheetName.toUpperCase(),
+        sheetName.toLowerCase(),
+        sheetName.charAt(0).toUpperCase() + sheetName.slice(1).toLowerCase()
+      ];
 
-        const text = await response.text();
-        const jsonStart = text.indexOf("{");
-        const jsonEnd = text.lastIndexOf("}");
-        const jsonString = text.substring(jsonStart, jsonEnd + 1);
-        data = JSON.parse(jsonString);
-        
-        if (data.table && data.table.rows) {
-          successfulSheetName = trySheetName;
-          break;
-        }
-      } catch (e) {
-        continue;
-      }
-    }
+      let data = null;
+      let successfulSheetName = null;
 
-    if (!data || !data.table || !data.table.rows || data.table.rows.length <= 1) {
-      console.log(`No existing tasks found in sheet, starting from ID 1`);
-      return 0; // Start from 1 if no tasks exist (only header row)
-    }
+      for (const trySheetName of sheetNamesToTry) {
+        try {
+          const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(
+            trySheetName
+          )}`;
 
-    console.log(`Successfully fetched data from sheet: ${successfulSheetName}`);
+          const response = await fetch(url);
+          if (!response.ok) continue;
 
-    // Get the last task ID from column B (index 1)
-    let lastTaskId = 0;
-    // Skip the first row (header) by starting from index 1
-    for (let i = 1; i < data.table.rows.length; i++) {
-      const row = data.table.rows[i];
-      if (row.c && row.c[1] && row.c[1].v) {
-        const taskIdValue = row.c[1].v.toString().trim();
-        const taskId = parseInt(taskIdValue);
-        if (!isNaN(taskId) && taskId > lastTaskId) {
-          lastTaskId = taskId;
+          const text = await response.text();
+          const jsonStart = text.indexOf("{");
+          const jsonEnd = text.lastIndexOf("}");
+          const jsonString = text.substring(jsonStart, jsonEnd + 1);
+          data = JSON.parse(jsonString);
+
+          if (data.table && data.table.rows) {
+            successfulSheetName = trySheetName;
+            break;
+          }
+        } catch (e) {
+          continue;
         }
       }
-    }
 
-    console.log(`Last Task ID in ${successfulSheetName}: ${lastTaskId}`);
-    return lastTaskId;
-  } catch (error) {
-    console.error("Error fetching last task ID:", error);
-    return 0;
-  }
-};
+      if (!data || !data.table || !data.table.rows || data.table.rows.length <= 1) {
+        console.log(`No existing tasks found in sheet, starting from ID 1`);
+        return 0; // Start from 1 if no tasks exist (only header row)
+      }
+
+      console.log(`Successfully fetched data from sheet: ${successfulSheetName}`);
+
+      // Get the last task ID from column B (index 1)
+      let lastTaskId = 0;
+      // Skip the first row (header) by starting from index 1
+      for (let i = 1; i < data.table.rows.length; i++) {
+        const row = data.table.rows[i];
+        if (row.c && row.c[1] && row.c[1].v) {
+          const taskIdValue = row.c[1].v.toString().trim();
+          const taskId = parseInt(taskIdValue);
+          if (!isNaN(taskId) && taskId > lastTaskId) {
+            lastTaskId = taskId;
+          }
+        }
+      }
+
+      console.log(`Last Task ID in ${successfulSheetName}: ${lastTaskId}`);
+      return lastTaskId;
+    } catch (error) {
+      console.error("Error fetching last task ID:", error);
+      return 0;
+    }
+  };
 
   // UPDATED: Date formatting function to return DD/MM/YYYY format (for working days comparison)
   const formatDateToDDMMYYYY = (date) => {
@@ -394,7 +394,7 @@ const getLastTaskId = async (sheetName) => {
   // Function to fetch working days from the Working Day Calendar sheet
   const fetchWorkingDays = async () => {
     try {
-      const sheetId = "1T6F0MMLbJALv79ka8hdr-Oo_Jtjn9oXT7PLMdq_jGB8";
+      const sheetId = "1pZx7O0Zfz52Gj-jon_UELVvueGcKPV2u0ONVq1IU3EU";
       const sheetName = "Working Day Calendar";
 
       const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(
@@ -660,168 +660,168 @@ const getLastTaskId = async (sheetName) => {
     }
   };
 
-// UPDATED: handleSubmit function with first-time user check logic
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setIsSubmitting(true);
+  // UPDATED: handleSubmit function with first-time user check logic
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
-  try {
-    if (generatedTasks.length === 0) {
-      alert("Please generate tasks first by clicking Preview Generated Tasks");
-      setIsSubmitting(false);
-      return;
-    }
+    try {
+      if (generatedTasks.length === 0) {
+        alert("Please generate tasks first by clicking Preview Generated Tasks");
+        setIsSubmitting(false);
+        return;
+      }
 
-    // Validate that department is selected
-    if (!formData.department || formData.department.trim() === "") {
-      alert("Please select a department before submitting tasks");
-      setIsSubmitting(false);
-      return;
-    }
+      // Validate that department is selected
+      if (!formData.department || formData.department.trim() === "") {
+        alert("Please select a department before submitting tasks");
+        setIsSubmitting(false);
+        return;
+      }
 
-    // Helper function to check if this is the first task for the user
-    const isFirstTaskForUser = async (doerName) => {
-      try {
-        const sheetId = "1T6F0MMLbJALv79ka8hdr-Oo_Jtjn9oXT7PLMdq_jGB8";
-        const sheetName = "Checklist";
+      // Helper function to check if this is the first task for the user
+      const isFirstTaskForUser = async (doerName) => {
+        try {
+          const sheetId = "1pZx7O0Zfz52Gj-jon_UELVvueGcKPV2u0ONVq1IU3EU";
+          const sheetName = "Checklist";
 
-        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(
-          sheetName
-        )}`;
+          const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(
+            sheetName
+          )}`;
 
-        const response = await fetch(url);
-        if (!response.ok) {
-          console.log("Checklist sheet not found - treating as first task");
-          return true;
-        }
+          const response = await fetch(url);
+          if (!response.ok) {
+            console.log("Checklist sheet not found - treating as first task");
+            return true;
+          }
 
-        const text = await response.text();
-        const jsonStart = text.indexOf("{");
-        const jsonEnd = text.lastIndexOf("}");
-        const jsonString = text.substring(jsonStart, jsonEnd + 1);
-        const data = JSON.parse(jsonString);
+          const text = await response.text();
+          const jsonStart = text.indexOf("{");
+          const jsonEnd = text.lastIndexOf("}");
+          const jsonString = text.substring(jsonStart, jsonEnd + 1);
+          const data = JSON.parse(jsonString);
 
-        if (!data.table || !data.table.rows || data.table.rows.length <= 1) {
-          console.log("Checklist sheet is empty - treating as first task");
-          return true;
-        }
+          if (!data.table || !data.table.rows || data.table.rows.length <= 1) {
+            console.log("Checklist sheet is empty - treating as first task");
+            return true;
+          }
 
-        // Check if doer name exists in column E (index 4) - "name" column
-        for (let i = 1; i < data.table.rows.length; i++) {
-          const row = data.table.rows[i];
-          if (row.c && row.c[4] && row.c[4].v) {
-            const existingDoer = row.c[4].v.toString().trim();
-            if (existingDoer === doerName.trim()) {
-              console.log(`User "${doerName}" found in Checklist - NOT first task`);
-              return false;
+          // Check if doer name exists in column E (index 4) - "name" column
+          for (let i = 1; i < data.table.rows.length; i++) {
+            const row = data.table.rows[i];
+            if (row.c && row.c[4] && row.c[4].v) {
+              const existingDoer = row.c[4].v.toString().trim();
+              if (existingDoer === doerName.trim()) {
+                console.log(`User "${doerName}" found in Checklist - NOT first task`);
+                return false;
+              }
             }
           }
+
+          console.log(`User "${doerName}" NOT found in Checklist - IS first task`);
+          return true;
+        } catch (error) {
+          console.error("Error checking first task:", error);
+          return true;
         }
+      };
 
-        console.log(`User "${doerName}" NOT found in Checklist - IS first task`);
-        return true;
-      } catch (error) {
-        console.error("Error checking first task:", error);
-        return true;
-      }
-    };
+      // Determine the sheet(s) based on frequency and first-time user check
+      let submitToSheets = [];
 
-    // Determine the sheet(s) based on frequency and first-time user check
-    let submitToSheets = [];
-    
-    if (formData.frequency === "one-time") {
-      submitToSheets = ["DELEGATION"];
-      console.log("One-time task - submitting to DELEGATION only");
-    } else {
-      const isFirstTask = await isFirstTaskForUser(formData.doer);
-      if (isFirstTask) {
-        submitToSheets = ["Unique", "Checklist"];
-        console.log("First task for user - submitting to both Unique and Checklist");
+      if (formData.frequency === "one-time") {
+        submitToSheets = ["DELEGATION"];
+        console.log("One-time task - submitting to DELEGATION only");
       } else {
-        submitToSheets = ["Unique"];
-        console.log("Existing user - submitting to Unique only");
+        const isFirstTask = await isFirstTaskForUser(formData.doer);
+        if (isFirstTask) {
+          submitToSheets = ["Unique", "Checklist"];
+          console.log("First task for user - submitting to both Unique and Checklist");
+        } else {
+          submitToSheets = ["Unique"];
+          console.log("Existing user - submitting to Unique only");
+        }
       }
-    }
 
-    console.log(`Selected department: ${formData.department}`);
-    console.log(`Doer: ${formData.doer}`);
-    console.log(`Target sheets: ${submitToSheets.join(', ')}`);
+      console.log(`Selected department: ${formData.department}`);
+      console.log(`Doer: ${formData.doer}`);
+      console.log(`Target sheets: ${submitToSheets.join(', ')}`);
 
-    // Submit to each target sheet
-    for (const sheetName of submitToSheets) {
-      // Get the last task ID from the current sheet (only for sheets that need it)
-      const needsTaskId = sheetName !== "Checklist";
-      const lastTaskId = needsTaskId ? await getLastTaskId(sheetName) : 0;
-      let nextTaskId = lastTaskId + 1;
+      // Submit to each target sheet
+      for (const sheetName of submitToSheets) {
+        // Get the last task ID from the current sheet (only for sheets that need it)
+        const needsTaskId = sheetName !== "Checklist";
+        const lastTaskId = needsTaskId ? await getLastTaskId(sheetName) : 0;
+        let nextTaskId = lastTaskId + 1;
 
-      // Prepare all tasks data for batch insertion
-      const tasksData = generatedTasks.map((task, index) => {
-        const baseData = {
-          timestamp: getCurrentTimestamp(),
-          department: formData.department,
-          givenBy: formData.givenBy,
-          name: formData.doer,
-          description: task.description,
-          startDate: task.dueDate,
-          freq: task.frequency,
-          enableReminders: task.enableReminders ? "Yes" : "No",
-          requireAttachment: task.requireAttachment ? "Yes" : "No"
-        };
-
-        // Only add taskId for sheets other than Checklist
-        if (needsTaskId) {
-          return {
-            ...baseData,
-            taskId: (nextTaskId + index).toString()
+        // Prepare all tasks data for batch insertion
+        const tasksData = generatedTasks.map((task, index) => {
+          const baseData = {
+            timestamp: getCurrentTimestamp(),
+            department: formData.department,
+            givenBy: formData.givenBy,
+            name: formData.doer,
+            description: task.description,
+            startDate: task.dueDate,
+            freq: task.frequency,
+            enableReminders: task.enableReminders ? "Yes" : "No",
+            requireAttachment: task.requireAttachment ? "Yes" : "No"
           };
-        }
 
-        return baseData;
+          // Only add taskId for sheets other than Checklist
+          if (needsTaskId) {
+            return {
+              ...baseData,
+              taskId: (nextTaskId + index).toString()
+            };
+          }
+
+          return baseData;
+        });
+
+        console.log(`Submitting ${tasksData.length} tasks to ${sheetName} sheet`);
+
+        // Submit all tasks in one batch to Google Sheets
+        const formPayload = new FormData();
+        formPayload.append("sheetName", sheetName);
+        formPayload.append("action", "insert");
+        formPayload.append("batchInsert", "true");
+        formPayload.append("rowData", JSON.stringify(tasksData));
+
+        await fetch(
+          "https://script.google.com/macros/s/AKfycbyaBCq6ZKHhOZBXRp9qw3hqrXh_aIOPvIHh_G41KtzPovhjl-UjEgj75Ok6gwJhrPOX/exec",
+          {
+            method: "POST",
+            body: formPayload,
+            mode: "no-cors",
+          }
+        );
+      }
+
+      const sheetNames = submitToSheets.join(' and ');
+      alert(`Successfully submitted ${generatedTasks.length} task${generatedTasks.length !== 1 ? 's' : ''} to ${sheetNames} sheet${submitToSheets.length > 1 ? 's' : ''}!`);
+
+      // Reset form
+      setFormData({
+        department: "",
+        givenBy: "",
+        doer: "",
+        description: "",
+        frequency: "one-time",
+        enableReminders: true,
+        requireAttachment: false
       });
-
-      console.log(`Submitting ${tasksData.length} tasks to ${sheetName} sheet`);
-
-      // Submit all tasks in one batch to Google Sheets
-      const formPayload = new FormData();
-      formPayload.append("sheetName", sheetName);
-      formPayload.append("action", "insert");
-      formPayload.append("batchInsert", "true");
-      formPayload.append("rowData", JSON.stringify(tasksData));
-
-      await fetch(
-        "https://script.google.com/macros/s/AKfycbwcmMvtW0SIzCnaVf_b5Z2-RXc6Ujo9i0uJAfwLilw7s3I9CIgBpE8RENgy8abKV08G/exec",
-        {
-          method: "POST",
-          body: formPayload,
-          mode: "no-cors",
-        }
-      );
+      setSelectedDate(null);
+      setTime("09:00");
+      setGeneratedTasks([]);
+      setAccordionOpen(false);
+    } catch (error) {
+      console.error("Submission error:", error);
+      alert("Failed to assign tasks. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const sheetNames = submitToSheets.join(' and ');
-    alert(`Successfully submitted ${generatedTasks.length} task${generatedTasks.length !== 1 ? 's' : ''} to ${sheetNames} sheet${submitToSheets.length > 1 ? 's' : ''}!`);
-    
-    // Reset form
-    setFormData({
-      department: "",
-      givenBy: "",
-      doer: "",
-      description: "",
-      frequency: "one-time",
-      enableReminders: true,
-      requireAttachment: false
-    });
-    setSelectedDate(null);
-    setTime("09:00");
-    setGeneratedTasks([]);
-    setAccordionOpen(false);
-  } catch (error) {
-    console.error("Submission error:", error);
-    alert("Failed to assign tasks. Please try again.");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
   // Helper function to format date for display in preview
   const formatDateForDisplay = (dateTimeStr) => {
     // dateTimeStr is in format "DD/MM/YYYY HH:MM:SS"

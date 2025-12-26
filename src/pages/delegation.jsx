@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback, useMemo,useRef  } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   CheckCircle2,
   Upload,
@@ -17,10 +17,10 @@ import AdminLayout from "../components/layout/AdminLayout";
 const CONFIG = {
   // Google Apps Script URL
   APPS_SCRIPT_URL:
-    "https://script.google.com/macros/s/AKfycbwcmMvtW0SIzCnaVf_b5Z2-RXc6Ujo9i0uJAfwLilw7s3I9CIgBpE8RENgy8abKV08G/exec",
+    "https://script.google.com/macros/s/AKfycbyaBCq6ZKHhOZBXRp9qw3hqrXh_aIOPvIHh_G41KtzPovhjl-UjEgj75Ok6gwJhrPOX/exec",
 
   // Google Drive folder ID for file uploads
-  DRIVE_FOLDER_ID: "1mocSXHZWgUBRpRCpOS_-1L-f0CcVJcl_",
+  DRIVE_FOLDER_ID: "1CQfQIVeUfOHePuUqtf3SQ-Hd6vJBfrYd",
 
   // Sheet names
   SOURCE_SHEET_NAME: "DELEGATION",
@@ -81,194 +81,194 @@ function DelegationDataPage() {
   // Debounced search term for better performance
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
-const [cameraStream, setCameraStream] = useState(null);
-const [cameraError, setCameraError] = useState("");
-const [isCameraLoading, setIsCameraLoading] = useState(false);
-const [currentCaptureId, setCurrentCaptureId] = useState(null);
+  const [cameraStream, setCameraStream] = useState(null);
+  const [cameraError, setCameraError] = useState("");
+  const [isCameraLoading, setIsCameraLoading] = useState(false);
+  const [currentCaptureId, setCurrentCaptureId] = useState(null);
 
 
-// Add these refs
-const videoRef = useRef(null);
-const canvasRef = useRef(null);
+  // Add these refs
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
 
-// Add camera cleanup useEffect (after other useEffects)
-useEffect(() => {
-  return () => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
-    }
-  };
-}, [cameraStream]);
+  // Add camera cleanup useEffect (after other useEffects)
+  useEffect(() => {
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [cameraStream]);
 
-// Add these camera functions (after other functions, before handleSubmit)
-const startCamera = async () => {
-  try {
-    setCameraError("");
-    setIsCameraLoading(true);
+  // Add these camera functions (after other functions, before handleSubmit)
+  const startCamera = async () => {
+    try {
+      setCameraError("");
+      setIsCameraLoading(true);
 
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setCameraError("Camera not supported on this device");
-      setIsCameraLoading(false);
-      return;
-    }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setCameraError("Camera not supported on this device");
+        setIsCameraLoading(false);
+        return;
+      }
 
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: 'environment',
-        width: { ideal: 1280 },
-        height: { ideal: 720 }
-      },
-      audio: false
-    });
-
-    setCameraStream(stream);
-    setIsCameraOpen(true);
-
-    if (videoRef.current) {
-      videoRef.current.srcObject = stream;
-
-      await new Promise((resolve, reject) => {
-        const video = videoRef.current;
-        if (!video) {
-          reject(new Error("Video ref lost"));
-          return;
-        }
-
-        let metadataLoaded = false;
-        let canPlay = false;
-
-        const checkReady = () => {
-          if (metadataLoaded && canPlay) {
-            resolve();
-          }
-        };
-
-        video.onloadedmetadata = () => {
-          metadataLoaded = true;
-          checkReady();
-        };
-
-        video.oncanplay = () => {
-          canPlay = true;
-          checkReady();
-        };
-
-        video.onerror = (err) => {
-          reject(err);
-        };
-
-        setTimeout(() => {
-          if (!metadataLoaded || !canPlay) {
-            reject(new Error("Video initialization timeout"));
-          }
-        }, 10000);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
       });
 
-      await videoRef.current.play();
-    }
+      setCameraStream(stream);
+      setIsCameraOpen(true);
 
-  } catch (error) {
-    console.error("Camera error:", error);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
 
-    if (error.name === 'NotAllowedError') {
-      setCameraError("Camera access denied. Please allow camera permissions.");
-    } else if (error.name === 'NotFoundError') {
-      setCameraError("No camera found on this device.");
-    } else if (error.name === 'NotReadableError') {
-      setCameraError("Camera is being used by another application.");
-    } else {
-      setCameraError("Unable to access camera: " + error.message);
-    }
-  } finally {
-    setIsCameraLoading(false);
-  }
-};
-
-const stopCamera = () => {
-  if (cameraStream) {
-    cameraStream.getTracks().forEach(track => {
-      track.stop();
-    });
-    setCameraStream(null);
-  }
-
-  if (videoRef.current) {
-    videoRef.current.srcObject = null;
-  }
-
-  setIsCameraOpen(false);
-  setCameraError("");
-  setIsCameraLoading(false);
-  setCurrentCaptureId(null);
-};
-
-const capturePhoto = async () => {
-  if (!videoRef.current || !currentCaptureId) {
-    alert("Camera not initialized. Please try again.");
-    return;
-  }
-
-  const video = videoRef.current;
-
-  try {
-    if (video.readyState < 2) {
-      alert("Camera is still loading. Please wait a moment and try again.");
-      return;
-    }
-
-    if (!video.videoWidth || !video.videoHeight) {
-      alert("Camera dimensions not available. Please restart camera.");
-      return;
-    }
-
-    if (!cameraStream || !cameraStream.active) {
-      alert("Camera stream not active. Please restart camera.");
-      return;
-    }
-
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    const context = canvas.getContext('2d');
-    if (!context) {
-      alert("Failed to create canvas context");
-      return;
-    }
-
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    const blob = await new Promise((resolve, reject) => {
-      canvas.toBlob(
-        (blob) => {
-          if (blob) {
-            resolve(blob);
-          } else {
-            reject(new Error("Failed to create blob"));
+        await new Promise((resolve, reject) => {
+          const video = videoRef.current;
+          if (!video) {
+            reject(new Error("Video ref lost"));
+            return;
           }
-        },
-        'image/jpeg',
-        0.92
+
+          let metadataLoaded = false;
+          let canPlay = false;
+
+          const checkReady = () => {
+            if (metadataLoaded && canPlay) {
+              resolve();
+            }
+          };
+
+          video.onloadedmetadata = () => {
+            metadataLoaded = true;
+            checkReady();
+          };
+
+          video.oncanplay = () => {
+            canPlay = true;
+            checkReady();
+          };
+
+          video.onerror = (err) => {
+            reject(err);
+          };
+
+          setTimeout(() => {
+            if (!metadataLoaded || !canPlay) {
+              reject(new Error("Video initialization timeout"));
+            }
+          }, 10000);
+        });
+
+        await videoRef.current.play();
+      }
+
+    } catch (error) {
+      console.error("Camera error:", error);
+
+      if (error.name === 'NotAllowedError') {
+        setCameraError("Camera access denied. Please allow camera permissions.");
+      } else if (error.name === 'NotFoundError') {
+        setCameraError("No camera found on this device.");
+      } else if (error.name === 'NotReadableError') {
+        setCameraError("Camera is being used by another application.");
+      } else {
+        setCameraError("Unable to access camera: " + error.message);
+      }
+    } finally {
+      setIsCameraLoading(false);
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => {
+        track.stop();
+      });
+      setCameraStream(null);
+    }
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+
+    setIsCameraOpen(false);
+    setCameraError("");
+    setIsCameraLoading(false);
+    setCurrentCaptureId(null);
+  };
+
+  const capturePhoto = async () => {
+    if (!videoRef.current || !currentCaptureId) {
+      alert("Camera not initialized. Please try again.");
+      return;
+    }
+
+    const video = videoRef.current;
+
+    try {
+      if (video.readyState < 2) {
+        alert("Camera is still loading. Please wait a moment and try again.");
+        return;
+      }
+
+      if (!video.videoWidth || !video.videoHeight) {
+        alert("Camera dimensions not available. Please restart camera.");
+        return;
+      }
+
+      if (!cameraStream || !cameraStream.active) {
+        alert("Camera stream not active. Please restart camera.");
+        return;
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      const context = canvas.getContext('2d');
+      if (!context) {
+        alert("Failed to create canvas context");
+        return;
+      }
+
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error("Failed to create blob"));
+            }
+          },
+          'image/jpeg',
+          0.92
+        );
+      });
+
+      const file = new File(
+        [blob],
+        `camera-${Date.now()}.jpg`,
+        { type: 'image/jpeg' }
       );
-    });
 
-    const file = new File(
-      [blob],
-      `camera-${Date.now()}.jpg`,
-      { type: 'image/jpeg' }
-    );
+      stopCamera();
 
-    stopCamera();
+      handleImageUpload(currentCaptureId, { target: { files: [file] } });
 
-    handleImageUpload(currentCaptureId, { target: { files: [file] } });
+      alert("✅ Photo captured successfully!");
 
-    alert("✅ Photo captured successfully!");
-
-  } catch (error) {
-    console.error("❌ Capture error:", error);
-    alert("Failed to capture photo: " + error.message);
-  }
-};
+    } catch (error) {
+      console.error("❌ Capture error:", error);
+      alert("Failed to capture photo: " + error.message);
+    }
+  };
 
   // NEW: Function to format date to DD/MM/YYYY HH:MM:SS
   const formatDateTimeToDDMMYYYY = useCallback((date) => {
@@ -749,15 +749,15 @@ const capturePhoto = async () => {
   const filteredAccountData = useMemo(() => {
     const filtered = debouncedSearchTerm
       ? accountData.filter((account) =>
-          Object.values(account).some(
-            (value) =>
-              value &&
-              value
-                .toString()
-                .toLowerCase()
-                .includes(debouncedSearchTerm.toLowerCase())
-          )
+        Object.values(account).some(
+          (value) =>
+            value &&
+            value
+              .toString()
+              .toLowerCase()
+              .includes(debouncedSearchTerm.toLowerCase())
         )
+      )
       : accountData;
 
     // Apply admin filters if user is admin
@@ -799,13 +799,13 @@ const capturePhoto = async () => {
 
         const matchesSearch = debouncedSearchTerm
           ? Object.values(item).some(
-              (value) =>
-                value &&
-                value
-                  .toString()
-                  .toLowerCase()
-                  .includes(debouncedSearchTerm.toLowerCase())
-            )
+            (value) =>
+              value &&
+              value
+                .toString()
+                .toLowerCase()
+                .includes(debouncedSearchTerm.toLowerCase())
+          )
           : true;
 
         let matchesDateRange = true;
@@ -912,8 +912,8 @@ const capturePhoto = async () => {
 
                 const rowValues = row.c
                   ? row.c.map((cell) =>
-                      cell && cell.v !== undefined ? cell.v : ""
-                    )
+                    cell && cell.v !== undefined ? cell.v : ""
+                  )
                   : [];
 
                 // Map all columns including column H (col7) for user filtering and column I (col8) for Task
@@ -996,8 +996,8 @@ const capturePhoto = async () => {
         const stableId = taskId
           ? `task_${taskId}_${googleSheetsRowIndex}`
           : `row_${googleSheetsRowIndex}_${Math.random()
-              .toString(36)
-              .substring(2, 15)}`;
+            .toString(36)
+            .substring(2, 15)}`;
 
         const rowData = {
           _id: stableId,
@@ -1321,178 +1321,172 @@ const capturePhoto = async () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
-  {/* PAGE TITLE */}
-  <h1 className="text-2xl font-bold tracking-tight text-purple-700 text-center sm:text-left">
-    {showHistory ? CONFIG.PAGE_CONFIG.historyTitle : CONFIG.PAGE_CONFIG.title}
-  </h1>
+          {/* PAGE TITLE */}
+          <h1 className="text-2xl font-bold tracking-tight text-purple-700 text-center sm:text-left">
+            {showHistory ? CONFIG.PAGE_CONFIG.historyTitle : CONFIG.PAGE_CONFIG.title}
+          </h1>
 
-  {/* SEARCH + FILTER + BUTTONS WRAPPER */}
-  <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
+          {/* SEARCH + FILTER + BUTTONS WRAPPER */}
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
 
-    {/* SEARCH BOX */}
-    <div className="relative w-full sm:w-64">
-      <Search
-        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-        size={18}
-      />
-      <input
-        type="text"
-        placeholder={showHistory ? "Search by Task ID..." : "Search tasks..."}
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full pl-10 pr-4 py-2 border border-purple-200 rounded-md 
+            {/* SEARCH BOX */}
+            <div className="relative w-full sm:w-64">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={18}
+              />
+              <input
+                type="text"
+                placeholder={showHistory ? "Search by Task ID..." : "Search tasks..."}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-purple-200 rounded-md 
                    focus:outline-none focus:ring-2 focus:ring-purple-500"
-      />
-    </div>
+              />
+            </div>
 
-    {/* ADMIN FILTERS */}
-    {userRole === "admin" && !showHistory && (
-      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
+            {/* ADMIN FILTERS */}
+            {userRole === "admin" && !showHistory && (
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
 
-        {/* NAME FILTER */}
-        <div className="relative w-full sm:w-auto">
-          <button
-            onClick={() => toggleDropdown("name")}
-            className="flex items-center justify-between gap-2 w-full px-3 py-2 border border-purple-200
+                {/* NAME FILTER */}
+                <div className="relative w-full sm:w-auto">
+                  <button
+                    onClick={() => toggleDropdown("name")}
+                    className="flex items-center justify-between gap-2 w-full px-3 py-2 border border-purple-200
                        rounded-md bg-white text-sm text-gray-700 hover:bg-gray-50"
-          >
-            <Filter className="h-4 w-4" />
-            {nameFilter || "Filter by Name"}
-            <ChevronDown
-              size={16}
-              className={`transition-transform ${
-                dropdownOpen.name ? "rotate-180" : ""
-              }`}
-            />
-          </button>
+                  >
+                    <Filter className="h-4 w-4" />
+                    {nameFilter || "Filter by Name"}
+                    <ChevronDown
+                      size={16}
+                      className={`transition-transform ${dropdownOpen.name ? "rotate-180" : ""
+                        }`}
+                    />
+                  </button>
 
-          {dropdownOpen.name && (
-            <div className="absolute z-50 mt-1 w-full sm:w-56 rounded-md bg-white shadow-lg 
+                  {dropdownOpen.name && (
+                    <div className="absolute z-50 mt-1 w-full sm:w-56 rounded-md bg-white shadow-lg 
                             border border-gray-200 max-h-60 overflow-auto">
-              <div className="py-1">
-                <button
-                  onClick={clearNameFilter}
-                  className={`block w-full text-left px-4 py-2 text-sm ${
-                    !nameFilter
-                      ? "bg-purple-100 text-purple-900"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  All Names
-                </button>
+                      <div className="py-1">
+                        <button
+                          onClick={clearNameFilter}
+                          className={`block w-full text-left px-4 py-2 text-sm ${!nameFilter
+                            ? "bg-purple-100 text-purple-900"
+                            : "text-gray-700 hover:bg-gray-100"
+                            }`}
+                        >
+                          All Names
+                        </button>
 
-                {allNames.map((name) => (
+                        {allNames.map((name) => (
+                          <button
+                            key={name}
+                            onClick={() => handleNameFilterSelect(name)}
+                            className={`block w-full text-left px-4 py-2 text-sm ${nameFilter === name
+                              ? "bg-purple-100 text-purple-900"
+                              : "text-gray-700 hover:bg-gray-100"
+                              }`}
+                          >
+                            {name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* DEPARTMENT FILTER */}
+                <div className="relative w-full sm:w-auto">
                   <button
-                    key={name}
-                    onClick={() => handleNameFilterSelect(name)}
-                    className={`block w-full text-left px-4 py-2 text-sm ${
-                      nameFilter === name
-                        ? "bg-purple-100 text-purple-900"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    {name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* DEPARTMENT FILTER */}
-        <div className="relative w-full sm:w-auto">
-          <button
-            onClick={() => toggleDropdown("department")}
-            className="flex items-center justify-between gap-2 w-full px-3 py-2 border border-purple-200 
+                    onClick={() => toggleDropdown("department")}
+                    className="flex items-center justify-between gap-2 w-full px-3 py-2 border border-purple-200 
                        rounded-md bg-white text-sm text-gray-700 hover:bg-gray-50"
-          >
-            <Filter className="h-4 w-4" />
-            {departmentFilter || "Filter by Department"}
-            <ChevronDown
-              size={16}
-              className={`transition-transform ${
-                dropdownOpen.department ? "rotate-180" : ""
-              }`}
-            />
-          </button>
-
-          {dropdownOpen.department && (
-            <div className="absolute z-50 mt-1 w-full sm:w-48 rounded-md bg-white shadow-lg 
-                            border border-gray-200 max-h-48 overflow-auto">
-              <div className="py-1">
-                <button
-                  onClick={clearDepartmentFilter}
-                  className={`block w-full text-left px-3 py-2 text-sm ${
-                    !departmentFilter
-                      ? "bg-purple-100 text-purple-900"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  All Departments
-                </button>
-
-                {allDepartments.map((dept) => (
-                  <button
-                    key={dept}
-                    onClick={() => handleDepartmentFilterSelect(dept)}
-                    className={`block w-full text-left px-3 py-2 text-sm ${
-                      departmentFilter === dept
-                        ? "bg-purple-100 text-purple-900"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
                   >
-                    {dept}
+                    <Filter className="h-4 w-4" />
+                    {departmentFilter || "Filter by Department"}
+                    <ChevronDown
+                      size={16}
+                      className={`transition-transform ${dropdownOpen.department ? "rotate-180" : ""
+                        }`}
+                    />
                   </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    )}
 
-    {/* HISTORY BUTTON (ADMIN) */}
-    {userRole === "admin" && (
-      <button
-        onClick={toggleHistory}
-        className="w-full sm:w-auto rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 
+                  {dropdownOpen.department && (
+                    <div className="absolute z-50 mt-1 w-full sm:w-48 rounded-md bg-white shadow-lg 
+                            border border-gray-200 max-h-48 overflow-auto">
+                      <div className="py-1">
+                        <button
+                          onClick={clearDepartmentFilter}
+                          className={`block w-full text-left px-3 py-2 text-sm ${!departmentFilter
+                            ? "bg-purple-100 text-purple-900"
+                            : "text-gray-700 hover:bg-gray-100"
+                            }`}
+                        >
+                          All Departments
+                        </button>
+
+                        {allDepartments.map((dept) => (
+                          <button
+                            key={dept}
+                            onClick={() => handleDepartmentFilterSelect(dept)}
+                            className={`block w-full text-left px-3 py-2 text-sm ${departmentFilter === dept
+                              ? "bg-purple-100 text-purple-900"
+                              : "text-gray-700 hover:bg-gray-100"
+                              }`}
+                          >
+                            {dept}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* HISTORY BUTTON (ADMIN) */}
+            {userRole === "admin" && (
+              <button
+                onClick={toggleHistory}
+                className="w-full sm:w-auto rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 
                    py-2 px-3 text-white hover:from-blue-600 hover:to-indigo-700 
                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-      >
-        {showHistory ? (
-          <div className="flex items-center justify-center">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            <span>Back to Tasks</span>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center">
-            <History className="h-4 w-4 mr-1" />
-            <span>View History</span>
-          </div>
-        )}
-      </button>
-    )}
+              >
+                {showHistory ? (
+                  <div className="flex items-center justify-center">
+                    <ArrowLeft className="h-4 w-4 mr-1" />
+                    <span>Back to Tasks</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center">
+                    <History className="h-4 w-4 mr-1" />
+                    <span>View History</span>
+                  </div>
+                )}
+              </button>
+            )}
 
-    {/* SUBMIT BUTTON */}
-    {!showHistory && (
-      <button
-        onClick={handleSubmit}
-        disabled={selectedItemsCount === 0 || isSubmitting}
-        className="w-full sm:w-auto rounded-md bg-gradient-to-r from-purple-600 to-pink-600 
+            {/* SUBMIT BUTTON */}
+            {!showHistory && (
+              <button
+                onClick={handleSubmit}
+                disabled={selectedItemsCount === 0 || isSubmitting}
+                className="w-full sm:w-auto rounded-md bg-gradient-to-r from-purple-600 to-pink-600 
                    py-2 px-3 text-white hover:from-purple-700 hover:to-pink-700 
                    focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 
                    disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {isSubmitting
-          ? "Processing..."
-          : `Submit Selected (${selectedItemsCount})`}
-      </button>
-    )}
+              >
+                {isSubmitting
+                  ? "Processing..."
+                  : `Submit Selected (${selectedItemsCount})`}
+              </button>
+            )}
 
-  </div>
-</div>
+          </div>
+        </div>
 
 
         {successMessage && (
@@ -1519,9 +1513,8 @@ const capturePhoto = async () => {
             </h2>
             <p className="text-purple-600 text-sm">
               {showHistory
-                ? `${CONFIG.PAGE_CONFIG.historyDescription} for ${
-                    userRole === "admin" ? "all" : "your"
-                  } tasks`
+                ? `${CONFIG.PAGE_CONFIG.historyDescription} for ${userRole === "admin" ? "all" : "your"
+                } tasks`
                 : CONFIG.PAGE_CONFIG.description}
             </p>
           </div>
@@ -1657,13 +1650,12 @@ const capturePhoto = async () => {
                           </td>
                           <td className="px-6 py-4 min-w-[100px]">
                             <span
-                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full whitespace-normal ${
-                                history["col2"] === "Done"
-                                  ? "bg-green-100 text-green-800"
-                                  : history["col2"] === "Extend date"
+                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full whitespace-normal ${history["col2"] === "Done"
+                                ? "bg-green-100 text-green-800"
+                                : history["col2"] === "Extend date"
                                   ? "bg-yellow-100 text-yellow-800"
                                   : "bg-gray-100 text-gray-800"
-                              }`}
+                                }`}
                             >
                               {history["col2"] || "—"}
                             </span>
@@ -1781,13 +1773,12 @@ const capturePhoto = async () => {
                             Status:
                           </span>
                           <span
-                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              history["col2"] === "Done"
-                                ? "bg-green-100 text-green-800"
-                                : history["col2"] === "Extend date"
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${history["col2"] === "Done"
+                              ? "bg-green-100 text-green-800"
+                              : history["col2"] === "Extend date"
                                 ? "bg-yellow-100 text-yellow-800"
                                 : "bg-gray-100 text-gray-800"
-                            }`}
+                              }`}
                           >
                             {history["col2"] || "—"}
                           </span>
@@ -1908,44 +1899,38 @@ const capturePhoto = async () => {
                         Task Description
                       </th>
                       <th
-                        className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px] ${
-                          !accountData["col17"] ? "bg-yellow-50" : ""
-                        }`}
+                        className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px] ${!accountData["col17"] ? "bg-yellow-50" : ""
+                          }`}
                       >
                         Task End Date
                       </th>
                       <th
-                        className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px] ${
-                          !accountData["col17"] ? "bg-green-50" : ""
-                        }`}
+                        className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px] ${!accountData["col17"] ? "bg-green-50" : ""
+                          }`}
                       >
                         Planned Date
                       </th>
                       <th
-                        className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px] ${
-                          !accountData["col17"] ? "bg-blue-50" : ""
-                        }`}
+                        className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px] ${!accountData["col17"] ? "bg-blue-50" : ""
+                          }`}
                       >
                         Status
                       </th>
                       <th
-                        className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px] ${
-                          !accountData["col17"] ? "bg-indigo-50" : ""
-                        }`}
+                        className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px] ${!accountData["col17"] ? "bg-indigo-50" : ""
+                          }`}
                       >
                         Next Target Date
                       </th>
                       <th
-                        className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px] ${
-                          !accountData["col17"] ? "bg-purple-50" : ""
-                        }`}
+                        className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px] ${!accountData["col17"] ? "bg-purple-50" : ""
+                          }`}
                       >
                         Remarks
                       </th>
                       <th
-                        className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px] ${
-                          !accountData["col17"] ? "bg-orange-50" : ""
-                        }`}
+                        className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px] ${!accountData["col17"] ? "bg-orange-50" : ""
+                          }`}
                       >
                         Upload Image
                       </th>
@@ -1953,14 +1938,14 @@ const capturePhoto = async () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredAccountData.length > 0 ? (
-                     filteredAccountData.map((account) => {
-                      const isSelected = selectedItems.has(account._id);
-                      const isDisabled = account.isDisabled;
-                      const isComplete = account.status === "Complete";
-                      const rowColorClass = getRowColor(account["col17"]);
-                      const taskStatus = statusData[account._id] || "";
-                      const isTodayTask = isToday(account["col6"]);
-                    
+                      filteredAccountData.map((account) => {
+                        const isSelected = selectedItems.has(account._id);
+                        const isDisabled = account.isDisabled;
+                        const isComplete = account.status === "Complete";
+                        const rowColorClass = getRowColor(account["col17"]);
+                        const taskStatus = statusData[account._id] || "";
+                        const isTodayTask = isToday(account["col6"]);
+
 
                         return (
                           <tr
@@ -2015,27 +2000,24 @@ const capturePhoto = async () => {
                               </div>
                             </td>
                             <td
-                              className={`px-6 py-4 min-w-[140px] ${
-                                !account["col17"] ? "bg-yellow-50" : ""
-                              }`}
+                              className={`px-6 py-4 min-w-[140px] ${!account["col17"] ? "bg-yellow-50" : ""
+                                }`}
                             >
                               <div className="text-sm text-gray-900 whitespace-normal break-words">
                                 {formatDateTimeForDisplay(account["col6"])}
                               </div>
                             </td>
                             <td
-                              className={`px-6 py-4 min-w-[140px] ${
-                                !account["col17"] ? "bg-green-50" : ""
-                              }`}
+                              className={`px-6 py-4 min-w-[140px] ${!account["col17"] ? "bg-green-50" : ""
+                                }`}
                             >
                               <div className="text-sm text-gray-900 whitespace-normal break-words">
                                 {formatDateTimeForDisplay(account["col10"])}
                               </div>
                             </td>
                             <td
-                              className={`px-6 py-4 min-w-[120px] ${
-                                !account["col17"] ? "bg-blue-50" : ""
-                              }`}
+                              className={`px-6 py-4 min-w-[120px] ${!account["col17"] ? "bg-blue-50" : ""
+                                }`}
                             >
                               <select
                                 disabled={!isSelected}
@@ -2054,9 +2036,8 @@ const capturePhoto = async () => {
                               </select>
                             </td>
                             <td
-                              className={`px-6 py-4 min-w-[140px] ${
-                                !account["col17"] ? "bg-indigo-50" : ""
-                              }`}
+                              className={`px-6 py-4 min-w-[140px] ${!account["col17"] ? "bg-indigo-50" : ""
+                                }`}
                             >
                               <input
                                 type="date"
@@ -2067,20 +2048,20 @@ const capturePhoto = async () => {
                                 value={
                                   nextTargetDate[account._id]
                                     ? (() => {
-                                        const dateStr =
-                                          nextTargetDate[account._id];
-                                        if (dateStr && dateStr.includes("/")) {
-                                          const datePart =
-                                            dateStr.split(" ")[0]; // Get only date part if datetime
-                                          const [day, month, year] =
-                                            datePart.split("/");
-                                          return `${year}-${month.padStart(
-                                            2,
-                                            "0"
-                                          )}-${day.padStart(2, "0")}`;
-                                        }
-                                        return dateStr;
-                                      })()
+                                      const dateStr =
+                                        nextTargetDate[account._id];
+                                      if (dateStr && dateStr.includes("/")) {
+                                        const datePart =
+                                          dateStr.split(" ")[0]; // Get only date part if datetime
+                                        const [day, month, year] =
+                                          datePart.split("/");
+                                        return `${year}-${month.padStart(
+                                          2,
+                                          "0"
+                                        )}-${day.padStart(2, "0")}`;
+                                      }
+                                      return dateStr;
+                                    })()
                                     : ""
                                 }
                                 onChange={(e) => {
@@ -2115,9 +2096,8 @@ const capturePhoto = async () => {
                               />
                             </td>
                             <td
-                              className={`px-6 py-4 min-w-[200px] max-w-[250px] ${
-                                !account["col17"] ? "bg-purple-50" : ""
-                              }`}
+                              className={`px-6 py-4 min-w-[200px] max-w-[250px] ${!account["col17"] ? "bg-purple-50" : ""
+                                }`}
                             >
                               <textarea
                                 placeholder="Enter remarks"
@@ -2133,82 +2113,81 @@ const capturePhoto = async () => {
                                 rows="2"
                               />
                             </td>
-           {/* Upload Image */}
-<td className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap w-[160px]">
-  {account.image ? (
-    <div className="flex items-center">
-      <img
-        src={
-          typeof account.image === "string"
-            ? account.image
-            : URL.createObjectURL(account.image)
-        }
-        alt="Receipt"
-        className="h-10 w-10 object-cover rounded-md mr-2"
-      />
-      <div className="flex flex-col">
-        <span className="text-xs text-gray-500">
-          {account.image instanceof File
-            ? account.image.name
-            : "Uploaded Receipt"}
-        </span>
-        {account.image instanceof File ? (
-          <span className="text-xs text-green-600">Ready to upload</span>
-        ) : (
-          <button
-            className="text-xs text-purple-600 hover:text-purple-800"
-            onClick={() => window.open(account.image, "_blank")}
-          >
-            View Full Image
-          </button>
-        )}
-      </div>
-    </div>
-  ) : (
-    <div className="flex flex-col gap-2">
-      <label
-        htmlFor={`upload-${account._id}`}
-        className={`flex items-center cursor-pointer ${
-          account["col9"]?.toUpperCase() === "YES"
-            ? "text-red-600 font-medium"
-            : "text-purple-600 hover:text-purple-800"
-        } ${isDisabled ? "pointer-events-none opacity-50" : ""}`}
-      >
-        <Upload className="h-4 w-4 mr-1" />
-        <span className="text-xs">
-          {account["col9"]?.toUpperCase() === "YES"
-            ? "Required Upload"
-            : "Upload Image"}
-          {account["col9"]?.toUpperCase() === "YES" && (
-            <span className="text-red-500 ml-1">*</span>
-          )}
-        </span>
-      </label>
+                            {/* Upload Image */}
+                            <td className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap w-[160px]">
+                              {account.image ? (
+                                <div className="flex items-center">
+                                  <img
+                                    src={
+                                      typeof account.image === "string"
+                                        ? account.image
+                                        : URL.createObjectURL(account.image)
+                                    }
+                                    alt="Receipt"
+                                    className="h-10 w-10 object-cover rounded-md mr-2"
+                                  />
+                                  <div className="flex flex-col">
+                                    <span className="text-xs text-gray-500">
+                                      {account.image instanceof File
+                                        ? account.image.name
+                                        : "Uploaded Receipt"}
+                                    </span>
+                                    {account.image instanceof File ? (
+                                      <span className="text-xs text-green-600">Ready to upload</span>
+                                    ) : (
+                                      <button
+                                        className="text-xs text-purple-600 hover:text-purple-800"
+                                        onClick={() => window.open(account.image, "_blank")}
+                                      >
+                                        View Full Image
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex flex-col gap-2">
+                                  <label
+                                    htmlFor={`upload-${account._id}`}
+                                    className={`flex items-center cursor-pointer ${account["col9"]?.toUpperCase() === "YES"
+                                      ? "text-red-600 font-medium"
+                                      : "text-purple-600 hover:text-purple-800"
+                                      } ${isDisabled ? "pointer-events-none opacity-50" : ""}`}
+                                  >
+                                    <Upload className="h-4 w-4 mr-1" />
+                                    <span className="text-xs">
+                                      {account["col9"]?.toUpperCase() === "YES"
+                                        ? "Required Upload"
+                                        : "Upload Image"}
+                                      {account["col9"]?.toUpperCase() === "YES" && (
+                                        <span className="text-red-500 ml-1">*</span>
+                                      )}
+                                    </span>
+                                  </label>
 
-      <input
-        id={`upload-${account._id}`}
-        type="file"
-        className="hidden"
-        accept="image/*"
-        onChange={(e) => handleImageUpload(account._id, e)}
-        disabled={!isSelected || isDisabled}
-      />
+                                  <input
+                                    id={`upload-${account._id}`}
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={(e) => handleImageUpload(account._id, e)}
+                                    disabled={!isSelected || isDisabled}
+                                  />
 
-      <button
-        onClick={() => {
-          if (!isSelected || isDisabled) return;
-          setCurrentCaptureId(account._id);
-          startCamera();
-        }}
-        disabled={!isSelected || isDisabled || isCameraLoading}
-        className="flex items-center text-blue-600 hover:text-blue-800 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <Camera className="h-4 w-4 mr-1" />
-        <span>{isCameraLoading ? "Loading..." : "Take Photo"}</span>
-      </button>
-    </div>
-  )}
-</td>
+                                  <button
+                                    onClick={() => {
+                                      if (!isSelected || isDisabled) return;
+                                      setCurrentCaptureId(account._id);
+                                      startCamera();
+                                    }}
+                                    disabled={!isSelected || isDisabled || isCameraLoading}
+                                    className="flex items-center text-blue-600 hover:text-blue-800 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    <Camera className="h-4 w-4 mr-1" />
+                                    <span>{isCameraLoading ? "Loading..." : "Take Photo"}</span>
+                                  </button>
+                                </div>
+                              )}
+                            </td>
                           </tr>
                         );
                       })
@@ -2230,294 +2209,291 @@ const capturePhoto = async () => {
 
               {/* Regular Tasks Table - Mobile Card View */}
               <div className="sm:hidden space-y-4 p-4">
-  {filteredAccountData.length > 0 ? (
-   filteredAccountData.map((account) => {
-    const isSelected = selectedItems.has(account._id);
-    const isDisabled = account.isDisabled;
-    const isComplete = account.status === "Complete";
-    const rowColorClass = getRowColor(account["col17"]);
-    const taskStatus = statusData[account._id] || "";
-    const isTodayTask = isToday(account["col6"]);
-  
-      return (
-        <div key={account._id} className={`bg-white border border-gray-200 rounded-lg p-4 shadow-sm ${
-          isSelected ? "bg-purple-50 border-purple-200" : ""
-        } ${rowColorClass}`}>
-          
-          {/* TODAY Badge */}
-          {isTodayTask && (
-            <div className="bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-md shadow-md mb-3 text-center">
-              TODAY
-            </div>
-          )}
+                {filteredAccountData.length > 0 ? (
+                  filteredAccountData.map((account) => {
+                    const isSelected = selectedItems.has(account._id);
+                    const isDisabled = account.isDisabled;
+                    const isComplete = account.status === "Complete";
+                    const rowColorClass = getRowColor(account["col17"]);
+                    const taskStatus = statusData[account._id] || "";
+                    const isTodayTask = isToday(account["col6"]);
 
-          <div className="space-y-3">
-            {/* Checkbox */}
-            <div className="flex justify-between items-center border-b pb-2">
-              <span className="font-medium text-gray-700">Select:</span>
-              <input
-                type="checkbox"
-                className="h-5 w-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                checked={isSelected}
-                onChange={(e) => handleCheckboxClick(e, account._id)}
-              />
-            </div>
+                    return (
+                      <div key={account._id} className={`bg-white border border-gray-200 rounded-lg p-4 shadow-sm ${isSelected ? "bg-purple-50 border-purple-200" : ""
+                        } ${rowColorClass}`}>
 
-            {/* Task ID */}
-            <div className="flex justify-between items-center border-b pb-2">
-              <span className="font-medium text-gray-700">Task ID:</span>
-              <div className="text-sm text-gray-900 break-words">
-                {account["col1"] || "—"}
+                        {/* TODAY Badge */}
+                        {isTodayTask && (
+                          <div className="bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-md shadow-md mb-3 text-center">
+                            TODAY
+                          </div>
+                        )}
+
+                        <div className="space-y-3">
+                          {/* Checkbox */}
+                          <div className="flex justify-between items-center border-b pb-2">
+                            <span className="font-medium text-gray-700">Select:</span>
+                            <input
+                              type="checkbox"
+                              className="h-5 w-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                              checked={isSelected}
+                              onChange={(e) => handleCheckboxClick(e, account._id)}
+                            />
+                          </div>
+
+                          {/* Task ID */}
+                          <div className="flex justify-between items-center border-b pb-2">
+                            <span className="font-medium text-gray-700">Task ID:</span>
+                            <div className="text-sm text-gray-900 break-words">
+                              {account["col1"] || "—"}
+                            </div>
+                          </div>
+
+                          {/* Department */}
+                          <div className="flex justify-between items-center border-b pb-2">
+                            <span className="font-medium text-gray-700">Department:</span>
+                            <div className="text-sm text-gray-900 break-words">
+                              {account["col2"] || "—"}
+                            </div>
+                          </div>
+
+                          {/* Given By */}
+                          <div className="flex justify-between items-center border-b pb-2">
+                            <span className="font-medium text-gray-700">Given By:</span>
+                            <div className="text-sm text-gray-900 break-words">
+                              {account["col3"] || "—"}
+                            </div>
+                          </div>
+
+                          {/* Name */}
+                          <div className="flex justify-between items-center border-b pb-2">
+                            <span className="font-medium text-gray-700">Name:</span>
+                            <div className="text-sm text-gray-900 break-words">
+                              {account["col4"] || "—"}
+                            </div>
+                          </div>
+
+                          {/* Description */}
+                          <div className="flex justify-between items-start border-b pb-2">
+                            <span className="font-medium text-gray-700">Description:</span>
+                            <div className="text-sm text-gray-900 break-words text-right max-w-[60%]">
+                              {account["col5"] || "—"}
+                            </div>
+                          </div>
+
+                          {/* End Date */}
+                          <div className="flex justify-between items-center border-b pb-2">
+                            <span className="font-medium text-gray-700">End Date:</span>
+                            <div className="text-sm text-gray-900 break-words">
+                              {formatDateTimeForDisplay(account["col6"])}
+                            </div>
+                          </div>
+
+                          {/* Planned Date */}
+                          <div className="flex justify-between items-center border-b pb-2">
+                            <span className="font-medium text-gray-700">Planned Date:</span>
+                            <div className="text-sm text-gray-900 break-words">
+                              {formatDateTimeForDisplay(account["col10"])}
+                            </div>
+                          </div>
+
+                          {/* Status */}
+                          <div className="flex justify-between items-center border-b pb-2">
+                            <span className="font-medium text-gray-700">Status:</span>
+                            <select
+                              disabled={!isSelected}
+                              value={taskStatus}
+                              onChange={(e) => handleStatusChange(account._id, e.target.value)}
+                              className="border border-gray-300 rounded-md px-2 py-1 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
+                            >
+                              <option value="">Select</option>
+                              <option value="Done">Done</option>
+                              <option value="Extend date">Extend date</option>
+                            </select>
+                          </div>
+
+                          {/* Next Target Date */}
+                          <div className="flex justify-between items-center border-b pb-2">
+                            <span className="font-medium text-gray-700">Next Target Date:</span>
+                            <input
+                              type="date"
+                              disabled={!isSelected || taskStatus !== "Extend date"}
+                              value={
+                                nextTargetDate[account._id]
+                                  ? (() => {
+                                    const dateStr = nextTargetDate[account._id];
+                                    if (dateStr && dateStr.includes("/")) {
+                                      const datePart = dateStr.split(" ")[0];
+                                      const [day, month, year] = datePart.split("/");
+                                      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+                                    }
+                                    return dateStr;
+                                  })()
+                                  : ""
+                              }
+                              onChange={(e) => {
+                                const inputDate = e.target.value;
+                                if (inputDate) {
+                                  const [year, month, day] = inputDate.split("-");
+                                  const currentTime = new Date();
+                                  const formattedDateTime = `${day}/${month}/${year} ${currentTime.getHours().toString().padStart(2, "0")}:${currentTime.getMinutes().toString().padStart(2, "0")}:${currentTime.getSeconds().toString().padStart(2, "0")}`;
+                                  handleNextTargetDateChange(account._id, formattedDateTime);
+                                }
+                              }}
+                              className="border border-gray-300 rounded-md px-2 py-1 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
+                            />
+                          </div>
+
+                          {/* Remarks */}
+                          <div className="flex justify-between items-start border-b pb-2">
+                            <span className="font-medium text-gray-700">Remarks:</span>
+                            <textarea
+                              placeholder="Enter remarks"
+                              disabled={!isSelected}
+                              value={remarksData[account._id] || ""}
+                              onChange={(e) => setRemarksData((prev) => ({ ...prev, [account._id]: e.target.value }))}
+                              className="border rounded-md px-2 py-1 border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm resize-none w-32"
+                              rows="2"
+                            />
+                          </div>
+
+                          {/* ✅ CAMERA + GALLERY BUTTONS */}
+                          <div className="text-sm">
+                            <span className="font-medium">Upload Image: </span>
+                            {account.image ? (
+                              <div className="flex items-center mt-2">
+                                <img
+                                  src={
+                                    typeof account.image === "string"
+                                      ? account.image
+                                      : URL.createObjectURL(account.image)
+                                  }
+                                  alt="Receipt"
+                                  className="h-10 w-10 object-cover rounded-md mr-2"
+                                />
+                                <div className="flex flex-col">
+                                  <span className="text-xs text-gray-500">
+                                    {account.image instanceof File ? account.image.name : "Uploaded Receipt"}
+                                  </span>
+                                  {account.image instanceof File ? (
+                                    <span className="text-xs text-green-600">Ready to upload</span>
+                                  ) : (
+                                    <button
+                                      className="text-xs text-purple-600 hover:text-purple-800"
+                                      onClick={() => window.open(account.image, "_blank")}
+                                    >
+                                      View Full Image
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center space-x-2 mt-2">
+                                <button
+                                  onClick={() => {
+                                    if (!isSelected || isDisabled) return;
+                                    setCurrentCaptureId(account._id);
+                                    startCamera();
+                                  }}
+                                  disabled={!isSelected || isDisabled}
+                                  className={`flex items-center px-3 py-2 rounded-lg border-2 text-sm font-medium ${isSelected ? "bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100 shadow-md" : "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
+                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                >
+                                  <Camera className="h-4 w-4 mr-1" />
+                                  <span>Camera</span>
+                                </button>
+
+                                <label className={`flex items-center px-3 py-2 rounded-lg border-2 text-sm font-medium ${isSelected
+                                  ? account["col9"]?.toUpperCase() === "YES"
+                                    ? "bg-red-50 border-red-300 text-red-700 hover:bg-red-100 shadow-md"
+                                    : "bg-purple-50 border-purple-300 text-purple-700 hover:bg-purple-100 shadow-md"
+                                  : "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
+                                  }`}>
+                                  <Upload className="h-4 w-4 mr-1" />
+                                  <span>{account["col9"]?.toUpperCase() === "YES" ? "Required*" : "Gallery"}</span>
+                                  <input
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={(e) => handleImageUpload(account._id, e)}
+                                    disabled={!isSelected || isDisabled}
+                                  />
+                                </label>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center text-gray-500 py-8">
+                    No pending tasks found
+                  </div>
+                )}
               </div>
-            </div>
-
-            {/* Department */}
-            <div className="flex justify-between items-center border-b pb-2">
-              <span className="font-medium text-gray-700">Department:</span>
-              <div className="text-sm text-gray-900 break-words">
-                {account["col2"] || "—"}
-              </div>
-            </div>
-
-            {/* Given By */}
-            <div className="flex justify-between items-center border-b pb-2">
-              <span className="font-medium text-gray-700">Given By:</span>
-              <div className="text-sm text-gray-900 break-words">
-                {account["col3"] || "—"}
-              </div>
-            </div>
-
-            {/* Name */}
-            <div className="flex justify-between items-center border-b pb-2">
-              <span className="font-medium text-gray-700">Name:</span>
-              <div className="text-sm text-gray-900 break-words">
-                {account["col4"] || "—"}
-              </div>
-            </div>
-
-            {/* Description */}
-            <div className="flex justify-between items-start border-b pb-2">
-              <span className="font-medium text-gray-700">Description:</span>
-              <div className="text-sm text-gray-900 break-words text-right max-w-[60%]">
-                {account["col5"] || "—"}
-              </div>
-            </div>
-
-            {/* End Date */}
-            <div className="flex justify-between items-center border-b pb-2">
-              <span className="font-medium text-gray-700">End Date:</span>
-              <div className="text-sm text-gray-900 break-words">
-                {formatDateTimeForDisplay(account["col6"])}
-              </div>
-            </div>
-
-            {/* Planned Date */}
-            <div className="flex justify-between items-center border-b pb-2">
-              <span className="font-medium text-gray-700">Planned Date:</span>
-              <div className="text-sm text-gray-900 break-words">
-                {formatDateTimeForDisplay(account["col10"])}
-              </div>
-            </div>
-
-            {/* Status */}
-            <div className="flex justify-between items-center border-b pb-2">
-              <span className="font-medium text-gray-700">Status:</span>
-              <select
-                disabled={!isSelected}
-                value={taskStatus}
-                onChange={(e) => handleStatusChange(account._id, e.target.value)}
-                className="border border-gray-300 rounded-md px-2 py-1 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
-              >
-                <option value="">Select</option>
-                <option value="Done">Done</option>
-                <option value="Extend date">Extend date</option>
-              </select>
-            </div>
-
-            {/* Next Target Date */}
-            <div className="flex justify-between items-center border-b pb-2">
-              <span className="font-medium text-gray-700">Next Target Date:</span>
-              <input
-                type="date"
-                disabled={!isSelected || taskStatus !== "Extend date"}
-                value={
-                  nextTargetDate[account._id]
-                    ? (() => {
-                        const dateStr = nextTargetDate[account._id];
-                        if (dateStr && dateStr.includes("/")) {
-                          const datePart = dateStr.split(" ")[0];
-                          const [day, month, year] = datePart.split("/");
-                          return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-                        }
-                        return dateStr;
-                      })()
-                    : ""
-                }
-                onChange={(e) => {
-                  const inputDate = e.target.value;
-                  if (inputDate) {
-                    const [year, month, day] = inputDate.split("-");
-                    const currentTime = new Date();
-                    const formattedDateTime = `${day}/${month}/${year} ${currentTime.getHours().toString().padStart(2, "0")}:${currentTime.getMinutes().toString().padStart(2, "0")}:${currentTime.getSeconds().toString().padStart(2, "0")}`;
-                    handleNextTargetDateChange(account._id, formattedDateTime);
-                  }
-                }}
-                className="border border-gray-300 rounded-md px-2 py-1 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
-              />
-            </div>
-
-            {/* Remarks */}
-            <div className="flex justify-between items-start border-b pb-2">
-              <span className="font-medium text-gray-700">Remarks:</span>
-              <textarea
-                placeholder="Enter remarks"
-                disabled={!isSelected}
-                value={remarksData[account._id] || ""}
-                onChange={(e) => setRemarksData((prev) => ({ ...prev, [account._id]: e.target.value }))}
-                className="border rounded-md px-2 py-1 border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm resize-none w-32"
-                rows="2"
-              />
-            </div>
-
-            {/* ✅ CAMERA + GALLERY BUTTONS */}
-            <div className="text-sm">
-  <span className="font-medium">Upload Image: </span>
-  {account.image ? (
-    <div className="flex items-center mt-2">
-      <img
-        src={
-          typeof account.image === "string"
-            ? account.image
-            : URL.createObjectURL(account.image)
-        }
-        alt="Receipt"
-        className="h-10 w-10 object-cover rounded-md mr-2"
-      />
-      <div className="flex flex-col">
-        <span className="text-xs text-gray-500">
-          {account.image instanceof File ? account.image.name : "Uploaded Receipt"}
-        </span>
-        {account.image instanceof File ? (
-          <span className="text-xs text-green-600">Ready to upload</span>
-        ) : (
-          <button
-            className="text-xs text-purple-600 hover:text-purple-800"
-            onClick={() => window.open(account.image, "_blank")}
-          >
-            View Full Image
-          </button>
-        )}
-      </div>
-    </div>
-  ) : (
-    <div className="flex items-center space-x-2 mt-2">
-     <button
-  onClick={() => {
-    if (!isSelected || isDisabled) return;
-    setCurrentCaptureId(account._id);
-    startCamera();
-  }}
-  disabled={!isSelected || isDisabled}
-  className={`flex items-center px-3 py-2 rounded-lg border-2 text-sm font-medium ${
-    isSelected ? "bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100 shadow-md" : "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
-  } disabled:opacity-50 disabled:cursor-not-allowed`}
->
-  <Camera className="h-4 w-4 mr-1" />
-  <span>Camera</span>
-</button>
-
-      <label className={`flex items-center px-3 py-2 rounded-lg border-2 text-sm font-medium ${
-        isSelected 
-          ? account["col9"]?.toUpperCase() === "YES" 
-            ? "bg-red-50 border-red-300 text-red-700 hover:bg-red-100 shadow-md" 
-            : "bg-purple-50 border-purple-300 text-purple-700 hover:bg-purple-100 shadow-md"
-          : "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
-      }`}>
-        <Upload className="h-4 w-4 mr-1" />
-        <span>{account["col9"]?.toUpperCase() === "YES" ? "Required*" : "Gallery"}</span>
-        <input
-          type="file"
-          className="hidden"
-          accept="image/*"
-          onChange={(e) => handleImageUpload(account._id, e)}
-          disabled={!isSelected || isDisabled}
-        />
-      </label>
-    </div>
-  )}
-</div>
-          </div>
-        </div>
-      );
-    })
-  ) : (
-    <div className="text-center text-gray-500 py-8">
-      No pending tasks found
-    </div>
-  )}
-</div>
 
             </>
           )}
         </div>
         {isCameraOpen && (
-  <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
-    <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full overflow-hidden">
-      <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between">
-        <h3 className="text-lg font-semibold">📸 Take Photo</h3>
-        <button
-          onClick={stopCamera}
-          className="text-white hover:text-gray-200 transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
+          <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full overflow-hidden">
+              <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between">
+                <h3 className="text-lg font-semibold">📸 Take Photo</h3>
+                <button
+                  onClick={stopCamera}
+                  className="text-white hover:text-gray-200 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-      <div className="relative bg-black">
-        <video
-          ref={videoRef}
-          className="w-full h-[400px] object-cover"
-          autoPlay
-          playsInline
-          muted
-        />
+              <div className="relative bg-black">
+                <video
+                  ref={videoRef}
+                  className="w-full h-[400px] object-cover"
+                  autoPlay
+                  playsInline
+                  muted
+                />
 
-        {isCameraLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="text-white text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent mx-auto mb-3"></div>
-              <p>Initializing camera...</p>
+                {isCameraLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                    <div className="text-white text-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent mx-auto mb-3"></div>
+                      <p>Initializing camera...</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {cameraError && (
+                <div className="bg-red-50 border-l-4 border-red-500 p-4">
+                  <p className="text-sm text-red-700">{cameraError}</p>
+                </div>
+              )}
+
+              <div className="p-4 bg-gray-50 flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={stopCamera}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={capturePhoto}
+                  disabled={isCameraLoading}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  📸 Capture Photo
+                </button>
+              </div>
             </div>
           </div>
         )}
-      </div>
-
-      {cameraError && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4">
-          <p className="text-sm text-red-700">{cameraError}</p>
-        </div>
-      )}
-
-      <div className="p-4 bg-gray-50 flex gap-3 justify-end">
-        <button
-          type="button"
-          onClick={stopCamera}
-          className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          onClick={capturePhoto}
-          disabled={isCameraLoading}
-          className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
-        >
-          📸 Capture Photo
-        </button>
-      </div>
-    </div>
-  </div>
-)}
       </div>
     </AdminLayout>
   );

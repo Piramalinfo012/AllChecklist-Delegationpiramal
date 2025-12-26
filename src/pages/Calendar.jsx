@@ -166,7 +166,7 @@ const CalendarUI = ({ userRole, userName, displayName }) => {
 
   // Dynamic URL from sessionStorage
   const BACKEND_URL =
-    "https://script.google.com/macros/s/AKfycbwcmMvtW0SIzCnaVf_b5Z2-RXc6Ujo9i0uJAfwLilw7s3I9CIgBpE8RENgy8abKV08G/exec";
+    "https://script.google.com/macros/s/AKfycbyaBCq6ZKHhOZBXRp9qw3hqrXh_aIOPvIHh_G41KtzPovhjl-UjEgj75Ok6gwJhrPOX/exec";
 
   // ---- STATE ----
   const [events, setEvents] = useState([]);
@@ -637,96 +637,96 @@ const CalendarUI = ({ userRole, userName, displayName }) => {
         <div className="max-w-7xl mx-auto">
           {/* Header Card */}
           <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 mb-3 border border-gray-100">
-  <div className="flex flex-col gap-2 sm:gap-3">
-    {/* Header Section with Buttons on Right - Single Row */}
-    <div className="flex items-center justify-between gap-2">
-      <div className="flex items-center gap-2">
-        <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg">
-          <svg
-            className="w-4 h-4 sm:w-5 sm:h-5 text-white"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-            />
-          </svg>
-        </div>
+            <div className="flex flex-col gap-2 sm:gap-3">
+              {/* Header Section with Buttons on Right - Single Row */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg">
+                    <svg
+                      className="w-4 h-4 sm:w-5 sm:h-5 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </div>
 
-        <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-          Task Calendar
-        </h1>
-      </div>
+                  <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    Task Calendar
+                  </h1>
+                </div>
 
-      {/* Actions on Right Side */}
-      <div className="flex gap-2 items-center">
-        {/* Name Filter Dropdown */}
-        <select
-          value={selectedNameFilter}
-          onChange={(e) => setSelectedNameFilter(e.target.value)}
-          className="px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
-        >
-          <option value="all">All Names</option>
-          {availableNames.map((name) => (
-            <option key={name} value={name}>
-              {name}
-            </option>
-          ))}
-        </select>
+                {/* Actions on Right Side */}
+                <div className="flex gap-2 items-center">
+                  {/* Name Filter Dropdown */}
+                  <select
+                    value={selectedNameFilter}
+                    onChange={(e) => setSelectedNameFilter(e.target.value)}
+                    className="px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                  >
+                    <option value="all">All Names</option>
+                    {availableNames.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
 
-        {/* Refresh Button */}
-        <button
-          onClick={fetchData}
-          disabled={loading}
-          className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <svg
-            className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${loading ? 'animate-spin' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          <span className="hidden sm:inline">Refresh</span>
-        </button>
-      </div>
-    </div>
+                  {/* Refresh Button */}
+                  <button
+                    onClick={fetchData}
+                    disabled={loading}
+                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <svg
+                      className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${loading ? 'animate-spin' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                    <span className="hidden sm:inline">Refresh</span>
+                  </button>
+                </div>
+              </div>
 
-    {/* Date Range Info - Compact */}
-    {lastWorkingDate && (
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100 rounded-lg px-2.5 py-1.5">
-        <div className="flex items-center gap-1.5">
-          <svg
-            className="w-3.5 h-3.5 text-blue-600 flex-shrink-0"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-            />
-          </svg>
-          <span className="text-xs font-medium text-gray-700">
-            Today → {formatDateDisplay(lastWorkingDate)}
-          </span>
-        </div>
-      </div>
-    )}
-  </div>
-</div>
+              {/* Date Range Info - Compact */}
+              {lastWorkingDate && (
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100 rounded-lg px-2.5 py-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <svg
+                      className="w-3.5 h-3.5 text-blue-600 flex-shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <span className="text-xs font-medium text-gray-700">
+                      Today → {formatDateDisplay(lastWorkingDate)}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Calendar */}
           <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl p-2 sm:p-8 border border-indigo-100">
@@ -821,11 +821,11 @@ const CalendarUI = ({ userRole, userName, displayName }) => {
               validRange={
                 lastWorkingDate
                   ? {
-                      start: new Date(
-                        new Date().setDate(new Date().getDate() + 1)
-                      ),
-                      end: lastWorkingDate,
-                    }
+                    start: new Date(
+                      new Date().setDate(new Date().getDate() + 1)
+                    ),
+                    end: lastWorkingDate,
+                  }
                   : {}
               }
               eventContent={(arg) => {
@@ -1025,11 +1025,10 @@ const TaskModal = ({
           <div className="flex flex-wrap gap-2 mb-3">
             <button
               onClick={() => setStatusFilter("all")}
-              className={`px-3 sm:px-4 py-1.5 rounded-lg font-medium transition-all text-xs sm:text-sm ${
-                statusFilter === "all"
+              className={`px-3 sm:px-4 py-1.5 rounded-lg font-medium transition-all text-xs sm:text-sm ${statusFilter === "all"
                   ? "bg-gray-800 text-white shadow-sm"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
+                }`}
             >
               All Tasks
             </button>
@@ -1067,9 +1066,8 @@ const TaskModal = ({
             </select>
             <input
               type="text"
-              placeholder={`Search by ${
-                filterType === "name" ? "person name" : "task ID"
-              }...`}
+              placeholder={`Search by ${filterType === "name" ? "person name" : "task ID"
+                }...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-gray-700 placeholder-gray-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -1151,11 +1149,10 @@ const TaskModal = ({
                               </span>
                             )}
                             <span
-                              className={`px-2 py-1 rounded-md font-medium ${
-                                t.status === "done"
+                              className={`px-2 py-1 rounded-md font-medium ${t.status === "done"
                                   ? "bg-green-100 text-green-700"
                                   : "bg-yellow-100 text-yellow-700"
-                              }`}
+                                }`}
                             >
                               {t.status === "done"
                                 ? "✓ Completed"
@@ -1172,8 +1169,8 @@ const TaskModal = ({
                                     t.priority === "high"
                                       ? "#ef4444"
                                       : t.priority === "medium"
-                                      ? "#f59e0b"
-                                      : "#10b981",
+                                        ? "#f59e0b"
+                                        : "#10b981",
                                 }}
                               >
                                 {t.priority.toUpperCase()}
