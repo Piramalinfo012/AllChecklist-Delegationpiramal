@@ -186,14 +186,10 @@ export default function QuickTask() {
         throw new Error('User configuration missing. Please log in again.');
       }
 
-      // Fetch last Task ID
-      const sheetUrl = `https://docs.google.com/spreadsheets/d/${userSheetId}/gviz/tq?tqx=out:json&sheet=${CONFIG.CHECKLIST_SHEET}`;
+      // Fetch last Task ID via Apps Script proxy
+      const sheetUrl = `${userAppScriptUrl}?sheet=${CONFIG.CHECKLIST_SHEET}&action=fetch`;
       const sheetResponse = await fetch(sheetUrl);
-      const sheetText = await sheetResponse.text();
-      const jsonStart = sheetText.indexOf('{');
-      const jsonEnd = sheetText.lastIndexOf('}') + 1;
-      const jsonData = sheetText.substring(jsonStart, jsonEnd);
-      const sheetData = JSON.parse(jsonData);
+      const sheetData = await sheetResponse.json();
 
       let lastTaskId = 0;
       if (sheetData?.table?.rows) {
@@ -255,6 +251,7 @@ export default function QuickTask() {
       setEditingRows(new Set());
       setEditedData({});
       await fetchChecklistData();
+      await fetchDelegationData();
       alert(`Successfully submitted ${tasksToSubmit.length} tasks!`);
     } catch (error) {
       console.error('Submission error:', error);
@@ -299,7 +296,7 @@ export default function QuickTask() {
       const userAppScriptUrl = "https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec";
 
       // Fetch user role from Whatsapp sheet via Apps Script proxy
-      const whatsappSheetUrl = `${userAppScriptUrl}?sheet=${CONFIG.WHATSAPP_SHEET}&action=fetch`;
+      const whatsappSheetUrl = `${userAppScriptUrl}?sheet=${CONFIG.WHATSAPP_SHEET}&action=fetch&t=${Date.now()}`;
       const response = await fetch(whatsappSheetUrl);
       const data = await response.json();
 
@@ -360,7 +357,7 @@ export default function QuickTask() {
       const userAppScriptUrl = "https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec";
 
       // Fetch from Checklist sheet (Unique sheet) via Apps Script proxy
-      const checklistUrl = `${userAppScriptUrl}?sheet=${CONFIG.CHECKLIST_SHEET}&action=fetch`;
+      const checklistUrl = `${userAppScriptUrl}?sheet=${CONFIG.CHECKLIST_SHEET}&action=fetch&t=${Date.now()}`;
       const response = await fetch(checklistUrl);
       const data = await response.json();
 
@@ -399,9 +396,8 @@ export default function QuickTask() {
         const uniqueTasksMap = new Map();
         transformedData.forEach(task => {
           const key = `${task.Name?.toLowerCase().trim()}_${task['Task Description']?.toLowerCase().trim()}`;
-          if (!uniqueTasksMap.has(key)) {
-            uniqueTasksMap.set(key, task);
-          }
+          // Use latest version if multiple entries exist for same task+description
+          uniqueTasksMap.set(key, task);
         });
 
         const uniqueTasks = Array.from(uniqueTasksMap.values());
@@ -439,7 +435,7 @@ export default function QuickTask() {
       const userAppScriptUrl = "https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec";
 
       // Fetch from Delegation sheet via Apps Script proxy
-      const delegationUrl = `${userAppScriptUrl}?sheet=${CONFIG.DELEGATION_SHEET}&action=fetch`;
+      const delegationUrl = `${userAppScriptUrl}?sheet=${CONFIG.DELEGATION_SHEET}&action=fetch&t=${Date.now()}`;
       const response = await fetch(delegationUrl);
       const data = await response.json();
 

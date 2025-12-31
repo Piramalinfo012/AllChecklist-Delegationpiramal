@@ -198,7 +198,7 @@ export default function AssignTask() {
 
       const url = `https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec?sheet=${encodeURIComponent(
         masterSheetName
-      )}&action=fetch`;
+      )}&action=fetch&t=${Date.now()}`;
 
       const response = await fetch(url);
       if (!response.ok) {
@@ -329,7 +329,7 @@ export default function AssignTask() {
         try {
           const url = `https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec?sheet=${encodeURIComponent(
             trySheetName
-          )}&action=fetch`;
+          )}&action=fetch&t=${Date.now()}`;
 
           const response = await fetch(url);
           if (!response.ok) continue;
@@ -391,7 +391,7 @@ export default function AssignTask() {
 
       const url = `https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec?sheet=${encodeURIComponent(
         sheetName
-      )}&action=fetch`;
+      )}&action=fetch&t=${Date.now()}`;
 
       const response = await fetch(url);
       if (!response.ok) {
@@ -413,7 +413,7 @@ export default function AssignTask() {
 
           // Handle Google Sheets Date(year,month,day) format
           if (typeof dateValue === "string" && dateValue.startsWith("Date(")) {
-            const match = /Date\((\d+),(\d+),(\d+)\)/.exec(dateValue);
+            const match = /Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)/.exec(dateValue);
             if (match) {
               const year = parseInt(match[1], 10);
               const month = parseInt(match[2], 10); // 0-indexed in Google's format
@@ -477,61 +477,103 @@ export default function AssignTask() {
 
     // For one-time frequency, generate a single task with specific date
     if (formData.frequency === "one-time") {
-      // Fetch working days and find the appropriate date (your existing logic)
-      const workingDays = await fetchWorkingDays();
-      if (workingDays.length === 0) {
-        alert("Could not retrieve working days. Please make sure the Working Day Calendar sheet is properly set up.");
-        return;
+      try {
+        // Fetch working days
+        const workingDays = await fetchWorkingDays();
+
+        if (workingDays.length === 0) {
+          // If no working days found, use the selected date directly
+          console.warn("No working days found. Using selected date directly.");
+
+          const taskDateTimeStr = formatDateTimeForStorage(date, time);
+
+          const tasks = [{
+            description: formData.description,
+            department: formData.department,
+            givenBy: formData.givenBy,
+            doer: formData.doer,
+            dueDate: taskDateTimeStr,
+            status: "pending",
+            frequency: formData.frequency,
+            enableReminders: formData.enableReminders,
+            requireAttachment: formData.requireAttachment,
+          }];
+
+          setGeneratedTasks(tasks);
+        } else {
+          console.log("Working days found:", workingDays);
+
+          const sortedWorkingDays = [...workingDays].sort((a, b) => {
+            const [dayA, monthA, yearA] = a.split('/').map(Number);
+            const [dayB, monthB, yearB] = b.split('/').map(Number);
+            return new Date(yearA, monthA - 1, dayA) - new Date(yearB, monthB - 1, dayB);
+          });
+
+          const selectedDate = new Date(date);
+          const futureDates = sortedWorkingDays.filter(dateStr => {
+            const [dateDay, month, year] = dateStr.split('/').map(Number);
+            const dateObj = new Date(year, month - 1, dateDay);
+            return dateObj >= selectedDate;
+          });
+
+          const startDateStr = formatDateToDDMMYYYY(selectedDate);
+          let taskDateStr;
+
+          if (futureDates.length === 0) {
+            // No future working days found, use the selected date
+            taskDateStr = startDateStr;
+            alert(`No working days found on or after your selected date. Using selected date: ${startDateStr}`);
+          } else {
+            let startIndex = futureDates.findIndex(d => d === startDateStr);
+
+            if (startIndex === -1) {
+              startIndex = 0;
+              alert(`The selected date (${startDateStr}) is not in the Working Day Calendar. The next available working day will be used instead: ${futureDates[0]}`);
+            }
+
+            taskDateStr = futureDates[startIndex];
+          }
+
+          const [taskDay, taskMonth, taskYear] = taskDateStr.split('/').map(Number);
+          const taskDate = new Date(taskYear, taskMonth - 1, taskDay);
+          const taskDateTimeStr = formatDateTimeForStorage(taskDate, time);
+
+          const tasks = [{
+            description: formData.description,
+            department: formData.department,
+            givenBy: formData.givenBy,
+            doer: formData.doer,
+            dueDate: taskDateTimeStr,
+            status: "pending",
+            frequency: formData.frequency,
+            enableReminders: formData.enableReminders,
+            requireAttachment: formData.requireAttachment,
+          }];
+
+          setGeneratedTasks(tasks);
+        }
+      } catch (error) {
+        console.error("Error generating one-time task:", error);
+        // Fallback: Use the selected date directly
+        const taskDateTimeStr = formatDateTimeForStorage(date, time);
+
+        const tasks = [{
+          description: formData.description,
+          department: formData.department,
+          givenBy: formData.givenBy,
+          doer: formData.doer,
+          dueDate: taskDateTimeStr,
+          status: "pending",
+          frequency: formData.frequency,
+          enableReminders: formData.enableReminders,
+          requireAttachment: formData.requireAttachment,
+        }];
+
+        setGeneratedTasks(tasks);
+        alert("Using selected date directly due to an error in fetching working days.");
       }
-
-      const sortedWorkingDays = [...workingDays].sort((a, b) => {
-        const [dayA, monthA, yearA] = a.split('/').map(Number);
-        const [dayB, monthB, yearB] = b.split('/').map(Number);
-        return new Date(yearA, monthA - 1, dayA) - new Date(yearB, monthB - 1, dayB);
-      });
-
-      const selectedDate = new Date(date);
-      const futureDates = sortedWorkingDays.filter(dateStr => {
-        const [dateDay, month, year] = dateStr.split('/').map(Number);
-        const dateObj = new Date(year, month - 1, dateDay);
-        return dateObj >= selectedDate;
-      });
-
-      if (futureDates.length === 0) {
-        alert("No working days found on or after your selected date. Please choose a different End Date or update the Working Day Calendar.");
-        return;
-      }
-
-      const startDateStr = formatDateToDDMMYYYY(selectedDate);
-      let startIndex = futureDates.findIndex(d => d === startDateStr);
-
-      if (startIndex === -1) {
-        startIndex = 0;
-        alert(`The selected date (${startDateStr}) is not in the Working Day Calendar. The next available working day will be used instead: ${futureDates[0]}`);
-      }
-
-      const taskDateStr = futureDates[startIndex];
-      const taskDateTimeStr = formatDateTimeForStorage(
-        new Date(taskDateStr.split('/').reverse().join('-')),
-        time
-      );
-
-      const tasks = [{
-        description: formData.description,
-        department: formData.department,
-        givenBy: formData.givenBy,
-        doer: formData.doer,
-        dueDate: taskDateTimeStr,
-        status: "pending",
-        frequency: formData.frequency,
-        enableReminders: formData.enableReminders,
-        requireAttachment: formData.requireAttachment,
-      }];
-
-      setGeneratedTasks(tasks);
     } else {
       // For recurring frequencies, generate only ONE task with the End Date
-      // The recurrence logic will be handled by your backend/system
       const taskDateTimeStr = formatDateTimeForStorage(date, time);
 
       const tasks = [{
@@ -675,7 +717,7 @@ export default function AssignTask() {
 
           const url = `https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec?sheet=${encodeURIComponent(
             sheetName
-          )}&action=fetch`;
+          )}&action=fetch&t=${Date.now()}`;
 
           const response = await fetch(url);
           if (!response.ok) {

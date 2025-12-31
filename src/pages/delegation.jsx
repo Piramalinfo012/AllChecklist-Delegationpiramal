@@ -491,7 +491,7 @@ function DelegationDataPage() {
 
       // Handle Google Sheets Date() format
       if (typeof dateTimeStr === "string" && dateTimeStr.startsWith("Date(")) {
-        const match = /Date\((\d+),(\d+),(\d+)\)/.exec(dateTimeStr);
+        const match = /Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)/.exec(dateTimeStr);
         if (match) {
           const year = Number.parseInt(match[1], 10);
           const month = Number.parseInt(match[2], 10);
@@ -555,7 +555,7 @@ function DelegationDataPage() {
 
       // Handle Google Sheets Date() format
       if (typeof dateStr === "string" && dateStr.startsWith("Date(")) {
-        const match = /Date\((\d+),(\d+),(\d+)\)/.exec(dateStr);
+        const match = /Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)/.exec(dateStr);
         if (match) {
           const year = Number.parseInt(match[1], 10);
           const month = Number.parseInt(match[2], 10);
@@ -856,10 +856,10 @@ function DelegationDataPage() {
       // Parallel fetch both sheets for better performance
       const [mainResponse, historyResponse] = await Promise.all([
         fetch(
-          `${CONFIG.APPS_SCRIPT_URL}?sheet=${CONFIG.SOURCE_SHEET_NAME}&action=fetch`
+          `${CONFIG.APPS_SCRIPT_URL}?sheet=${CONFIG.SOURCE_SHEET_NAME}&action=fetch&t=${Date.now()}`
         ),
         fetch(
-          `${CONFIG.APPS_SCRIPT_URL}?sheet=${CONFIG.TARGET_SHEET_NAME}&action=fetch`
+          `${CONFIG.APPS_SCRIPT_URL}?sheet=${CONFIG.TARGET_SHEET_NAME}&action=fetch&t=${Date.now()}`
         ).catch(() => null),
       ]);
 
@@ -2179,7 +2179,6 @@ function DelegationDataPage() {
                                       setCurrentCaptureId(account._id);
                                       startCamera();
                                     }}
-                                    disabled={!isSelected || isDisabled || isCameraLoading}
                                     className="flex items-center text-blue-600 hover:text-blue-800 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
                                     <Camera className="h-4 w-4 mr-1" />

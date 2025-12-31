@@ -69,7 +69,7 @@ function AccountDataPage() {
 
     if (typeof dateStr === 'string' && dateStr.startsWith('Date(')) {
       // Handle Google Sheets Date(year,month,day) format
-      const match = /Date\((\d+),(\d+),(\d+)\)/.exec(dateStr);
+      const match = /Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)/.exec(dateStr);
       if (match) {
         const year = parseInt(match[1], 10);
         const month = parseInt(match[2], 10); // 0-indexed in Google's format
@@ -357,7 +357,7 @@ function AccountDataPage() {
       const pendingAccounts = [];
       const historyRows = [];
 
-      const response = await fetch(`${APPS_SCRIPT_URL}?sheet=STORE&action=fetch`);
+      const response = await fetch(`${APPS_SCRIPT_URL}?sheet=STORE&action=fetch&t=${Date.now()}`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch data: ${response.status}`);

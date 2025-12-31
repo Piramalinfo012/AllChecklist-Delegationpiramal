@@ -209,7 +209,7 @@ export default function AdminDashboard() {
 
       // Google Sheets Date format
       if (dateValue.startsWith("Date(")) {
-        const match = /Date$(\d+),(\d+),(\d+)$/.exec(dateValue)
+        const match = /Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)/.exec(dateValue)
         if (match) {
           const year = Number.parseInt(match[1], 10)
           const month = Number.parseInt(match[2], 10)
@@ -244,7 +244,7 @@ export default function AdminDashboard() {
   // Function to fetch data using Apps Script
   const fetchDataFromAppsScript = async (sheetName) => {
     try {
-      const response = await fetch(`${APPS_SCRIPT_URL}?sheet=${encodeURIComponent(sheetName)}&action=fetch`)
+      const response = await fetch(`${APPS_SCRIPT_URL}?sheet=${encodeURIComponent(sheetName)}&action=fetch&t=${Date.now()}`)
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -299,7 +299,7 @@ export default function AdminDashboard() {
 
       // Fallback to Apps Script proxy if initial attempt fails
       const response = await fetch(
-        `${APPS_SCRIPT_URL}?sheet=MASTER&action=fetch`
+        `${APPS_SCRIPT_URL}?sheet=MASTER&action=fetch&t=${Date.now()}`
       );
 
       if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);

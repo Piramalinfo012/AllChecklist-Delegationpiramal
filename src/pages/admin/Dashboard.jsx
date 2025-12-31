@@ -333,7 +333,7 @@ export default function AdminDashboard() {
     if (typeof dateStr === 'string' && dateStr.startsWith('Date(')) {
       // Updated regex to handle Google Sheets Date(year,month,day,hour,minute,second) format
       // This will match both Date(year,month,day) and Date(year,month,day,hour,minute,second)
-      const match = /Date\((\d+),(\d+),(\d+)(?:,\d+,\d+,\d+)?\)/.exec(dateStr)
+      const match = /Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)/.exec(dateStr)
       if (match) {
         const year = parseInt(match[1], 10)
         const month = parseInt(match[2], 10) // 0-indexed in Google's format
@@ -398,7 +398,7 @@ export default function AdminDashboard() {
 
       // Prepare fetch calls
       const fetchPromises = [
-        fetch(`${scriptUrl}?sheet=${sheetName}`, {
+        fetch(`${scriptUrl}?sheet=${sheetName}&t=${Date.now()}`, {
           method: 'GET',
           redirect: 'follow',
         })
@@ -407,7 +407,7 @@ export default function AdminDashboard() {
       // If checklist mode, also fetch the Archieve sheet
       if (dashboardType === "checklist") {
         fetchPromises.push(
-          fetch(`${scriptUrl}?sheet=${archiveSheetName}`, {
+          fetch(`${scriptUrl}?sheet=${archiveSheetName}&t=${Date.now()}`, {
             method: 'GET',
             redirect: 'follow',
           })
@@ -650,44 +650,53 @@ export default function AdminDashboard() {
           totalTasks++;
           staffData.totalTasks++;
 
-          if (status === 'completed') {
-            completedTasks++;
-            staffData.completedTasks++;
-            statusData.Completed++;
-
-            // Count by rating (delegation only)
-            if (dashboardType === "delegation") {
-              const ratingValue = getCellValue(row, 17);
-              if (ratingValue === 1) completedRatingOne++;
-              else if (ratingValue === 2) completedRatingTwo++;
-              else if (ratingValue > 2) completedRatingThreePlus++;
-            }
-
-            // Update monthly data
-            const completedMonth = parseDateFromDDMMYYYY(completionDate);
-            if (completedMonth) {
-              const monthName = completedMonth.toLocaleString('default', { month: 'short' });
-              if (monthlyData[monthName]) {
-                monthlyData[monthName].completed++;
-              }
-            }
+          // SPECIAL LOGIC: Archive tasks only count towards TOTAL, not COMPLETED/PENDING/OVERDUE
+          // As requested by user: "only remove this logic for three cards completed ,pending and overdue 
+          // and remain same logic fetch data two sheet in one cards Total task card"
+          if (isArchive) {
+            // Already added to totalTasks above.
+            // Do NOT add to completed/pending/overdue
           } else {
-            staffData.pendingTasks++;
-            pendingTasks++;
-            statusData.Pending++;
+            // Regular logic for non-archive tasks
+            if (status === 'completed') {
+              completedTasks++;
+              staffData.completedTasks++;
+              statusData.Completed++;
 
-            if (status === 'overdue') {
-              overdueTasks++;
-              statusData.Overdue++;
-            }
+              // Count by rating (delegation only)
+              if (dashboardType === "delegation") {
+                const ratingValue = getCellValue(row, 17);
+                if (ratingValue === 1) completedRatingOne++;
+                else if (ratingValue === 2) completedRatingTwo++;
+                else if (ratingValue > 2) completedRatingThreePlus++;
+              }
 
-            // Monthly pending data
-            const monthName = (dashboardType === "checklist")
-              ? today.toLocaleString('default', { month: 'short' })
-              : new Date().toLocaleString('default', { month: 'short' });
+              // Update monthly data
+              const completedMonth = parseDateFromDDMMYYYY(completionDate);
+              if (completedMonth) {
+                const monthName = completedMonth.toLocaleString('default', { month: 'short' });
+                if (monthlyData[monthName]) {
+                  monthlyData[monthName].completed++;
+                }
+              }
+            } else {
+              staffData.pendingTasks++;
+              pendingTasks++;
+              statusData.Pending++;
 
-            if (monthlyData[monthName]) {
-              monthlyData[monthName].pending++;
+              if (status === 'overdue') {
+                overdueTasks++;
+                statusData.Overdue++;
+              }
+
+              // Monthly pending data
+              const monthName = (dashboardType === "checklist")
+                ? today.toLocaleString('default', { month: 'short' })
+                : new Date().toLocaleString('default', { month: 'short' });
+
+              if (monthlyData[monthName]) {
+                monthlyData[monthName].pending++;
+              }
             }
           }
         }

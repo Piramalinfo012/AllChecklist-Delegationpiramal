@@ -45,17 +45,10 @@ export default function QuickTask() {
     const fetchDepartments = useCallback(async () => {
         try {
             setDepartmentsLoading(true);
-            console.log("Fetching departments..."); // Debug log
-            const masterSheetUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&sheet=${CONFIG.MASTER_SHEET}`;
+            const userAppScriptUrl = "https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec";
+            const masterSheetUrl = `${userAppScriptUrl}?sheet=${CONFIG.MASTER_SHEET}&action=fetch&t=${Date.now()}`;
             const response = await fetch(masterSheetUrl);
-            const text = await response.text();
-            console.log("Raw response:", text); // Debug log
-
-            const jsonStart = text.indexOf('{');
-            const jsonEnd = text.lastIndexOf('}') + 1;
-            const jsonData = text.substring(jsonStart, jsonEnd);
-            console.log("Parsed JSON:", jsonData); // Debug log
-            const data = JSON.parse(jsonData);
+            const data = await response.json();
 
             if (data?.table?.rows) {
                 console.log("Found rows:", data.table.rows); // Debug log
@@ -100,15 +93,11 @@ export default function QuickTask() {
                 throw new Error("No user logged in. Please log in to access tasks.");
             }
 
-            // Fetch user role from Whatsapp sheet
-            const whatsappSheetUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&sheet=${CONFIG.WHATSAPP_SHEET}`;
+            // Fetch user role from Whatsapp sheet via proxy
+            const userAppScriptUrl = "https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec";
+            const whatsappSheetUrl = `${userAppScriptUrl}?sheet=${CONFIG.WHATSAPP_SHEET}&action=fetch&t=${Date.now()}`;
             const response = await fetch(whatsappSheetUrl);
-            const text = await response.text();
-
-            const jsonStart = text.indexOf('{');
-            const jsonEnd = text.lastIndexOf('}') + 1;
-            const jsonData = text.substring(jsonStart, jsonEnd);
-            const data = JSON.parse(jsonData);
+            const data = await response.json();
 
             if (data?.table?.rows) {
                 let foundUser = null;
@@ -159,15 +148,11 @@ export default function QuickTask() {
             // Determine which sheet to use based on selected department
             const sheetName = selectedDepartment || CONFIG.CHECKLIST_SHEET;
 
-            // Fetch from Checklist sheet (Unique task or department sheet)
-            const checklistUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
+            // Fetch from Checklist sheet via proxy
+            const userAppScriptUrl = "https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec";
+            const checklistUrl = `${userAppScriptUrl}?sheet=${sheetName}&action=fetch&t=${Date.now()}`;
             const response = await fetch(checklistUrl);
-            const text = await response.text();
-
-            const jsonStart = text.indexOf('{');
-            const jsonEnd = text.lastIndexOf('}') + 1;
-            const jsonData = text.substring(jsonStart, jsonEnd);
-            const data = JSON.parse(jsonData);
+            const data = await response.json();
 
             if (data?.table?.rows) {
                 const rows = data.table.rows.slice(1); // Skip header
@@ -231,15 +216,11 @@ export default function QuickTask() {
         try {
             setDelegationLoading(true);
 
-            // Fetch from Delegation sheet
-            const delegationUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&sheet=${CONFIG.DELEGATION_SHEET}`;
+            // Fetch from Delegation sheet via proxy
+            const userAppScriptUrl = "https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec";
+            const delegationUrl = `${userAppScriptUrl}?sheet=${CONFIG.DELEGATION_SHEET}&action=fetch&t=${Date.now()}`;
             const response = await fetch(delegationUrl);
-            const text = await response.text();
-
-            const jsonStart = text.indexOf('{');
-            const jsonEnd = text.lastIndexOf('}') + 1;
-            const jsonData = text.substring(jsonStart, jsonEnd);
-            const data = JSON.parse(jsonData);
+            const data = await response.json();
 
             if (data?.table?.rows) {
                 const rows = data.table.rows.slice(1); // Skip header
