@@ -166,7 +166,7 @@ const CalendarUI = ({ userRole, userName, displayName }) => {
 
   // Dynamic URL from sessionStorage
   const BACKEND_URL =
-    "https://script.google.com/macros/s/AKfycbyaBCq6ZKHhOZBXRp9qw3hqrXh_aIOPvIHh_G41KtzPovhjl-UjEgj75Ok6gwJhrPOX/exec";
+    "https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec";
 
   // ---- STATE ----
   const [events, setEvents] = useState([]);
@@ -1026,8 +1026,8 @@ const TaskModal = ({
             <button
               onClick={() => setStatusFilter("all")}
               className={`px-3 sm:px-4 py-1.5 rounded-lg font-medium transition-all text-xs sm:text-sm ${statusFilter === "all"
-                  ? "bg-gray-800 text-white shadow-sm"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                ? "bg-gray-800 text-white shadow-sm"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
             >
               All Tasks
@@ -1150,8 +1150,8 @@ const TaskModal = ({
                             )}
                             <span
                               className={`px-2 py-1 rounded-md font-medium ${t.status === "done"
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-yellow-100 text-yellow-700"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-yellow-100 text-yellow-700"
                                 }`}
                             >
                               {t.status === "done"

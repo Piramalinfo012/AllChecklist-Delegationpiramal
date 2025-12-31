@@ -18,7 +18,7 @@ import AdminLayout from "../../components/layout/AdminLayout";
 const CONFIG = {
   // Google Apps Script URL
   APPS_SCRIPT_URL:
-    "https://script.google.com/macros/s/AKfycbyaBCq6ZKHhOZBXRp9qw3hqrXh_aIOPvIHh_G41KtzPovhjl-UjEgj75Ok6gwJhrPOX/exec",
+    "https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec",
   // Google Drive folder ID for file uploads
   DRIVE_FOLDER_ID: "1Y1lg8X7qFA4KgvcaVA_ywKx1gOnZ2ZO6",
   // Sheet name to work with
@@ -822,8 +822,8 @@ function Approval() {
               <button
                 onClick={() => setActiveApprovalTab('checklist')}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeApprovalTab === 'checklist'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
               >
                 Checklist Tasks
@@ -831,8 +831,8 @@ function Approval() {
               <button
                 onClick={() => setActiveApprovalTab('delegation')}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeApprovalTab === 'delegation'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
               >
                 Delegation Tasks
@@ -1313,14 +1313,14 @@ function Approval() {
                                     <div className="flex flex-col items-center">
                                       <div
                                         className={`h-4 w-4 rounded border-gray-300 ${history[adminDoneColumn].toString().trim() === "Done"
-                                            ? "text-green-600 bg-green-100"
-                                            : "text-red-600 bg-red-100"
+                                          ? "text-green-600 bg-green-100"
+                                          : "text-red-600 bg-red-100"
                                           }`}
                                       >
                                         <span
                                           className={`text-xs ${history[adminDoneColumn].toString().trim() === "Done"
-                                              ? "text-green-600"
-                                              : "text-red-600"
+                                            ? "text-green-600"
+                                            : "text-red-600"
                                             }`}
                                         >
                                           {history[adminDoneColumn].toString().trim() === "Done" ? "✓" : "✗"}
@@ -1328,8 +1328,8 @@ function Approval() {
                                       </div>
                                       <span
                                         className={`text-xs mt-1 text-center break-words ${history[adminDoneColumn].toString().trim() === "Done"
-                                            ? "text-green-600"
-                                            : "text-red-600"
+                                          ? "text-green-600"
+                                          : "text-red-600"
                                           }`}
                                       >
                                         {history[adminDoneColumn].toString().trim()}
@@ -1457,10 +1457,10 @@ function Approval() {
                               <td className="px-3 py-4 bg-blue-50 min-w-[80px]">
                                 <span
                                   className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full break-words ${history["col12"] === "Yes"
-                                      ? "bg-green-100 text-green-800"
-                                      : history["col12"] === "No"
-                                        ? "bg-red-100 text-red-800"
-                                        : "bg-gray-100 text-gray-800"
+                                    ? "bg-green-100 text-green-800"
+                                    : history["col12"] === "No"
+                                      ? "bg-red-100 text-red-800"
+                                      : "bg-gray-100 text-gray-800"
                                     }`}
                                 >
                                   {history["col12"] || "—"}
@@ -1543,16 +1543,16 @@ function Approval() {
                                   <div className="flex flex-col items-center">
                                     <div
                                       className={`h-4 w-4 rounded border-gray-300 ${history["col15"].toString().trim() ===
-                                          "Done"
-                                          ? "text-green-600 bg-green-100"
-                                          : "text-red-600 bg-red-100"
+                                        "Done"
+                                        ? "text-green-600 bg-green-100"
+                                        : "text-red-600 bg-red-100"
                                         }`}
                                     >
                                       <span
                                         className={`text-xs ${history["col15"].toString().trim() ===
-                                            "Done"
-                                            ? "text-green-600"
-                                            : "text-red-600"
+                                          "Done"
+                                          ? "text-green-600"
+                                          : "text-red-600"
                                           }`}
                                       >
                                         {history["col15"].toString().trim() ===
@@ -1563,9 +1563,9 @@ function Approval() {
                                     </div>
                                     <span
                                       className={`text-xs mt-1 text-center break-words ${history["col15"].toString().trim() ===
-                                          "Done"
-                                          ? "text-green-600"
-                                          : "text-red-600"
+                                        "Done"
+                                        ? "text-green-600"
+                                        : "text-red-600"
                                         }`}
                                     >
                                       {history["col15"].toString().trim()}

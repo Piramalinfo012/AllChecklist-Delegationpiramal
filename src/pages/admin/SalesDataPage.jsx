@@ -19,9 +19,9 @@ import AdminLayout from "../../components/layout/AdminLayout";
 const CONFIG = {
   // Google Apps Script URL
   APPS_SCRIPT_URL:
-    "https://script.google.com/macros/s/AKfycbyaBCq6ZKHhOZBXRp9qw3hqrXh_aIOPvIHh_G41KtzPovhjl-UjEgj75Ok6gwJhrPOX/exec",
+    "https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec",
   // Google Drive folder ID for file uploads
-  DRIVE_FOLDER_ID: "1CQfQIVeUfOHePuUqtf3SQ-Hd6vJBfrYd",
+  DRIVE_FOLDER_ID: "1SkczlUq9QeHAEC0cduh19clKvvC1iVur",
   // Sheet name to work with
   SHEET_NAME: "Checklist",
   // Page configuration

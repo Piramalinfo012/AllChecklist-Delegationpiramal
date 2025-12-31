@@ -40,23 +40,19 @@ const LoginPage = () => {
     useEffect(() => {
         const fetchMasterData = async () => {
             const SCRIPT_URL =
-                "https://script.google.com/macros/s/AKfycbyaBCq6ZKHhOZBXRp9qw3hqrXh_aIOPvIHh_G41KtzPovhjl-UjEgj75Ok6gwJhrPOX/exec";
+                "https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec";
 
             try {
                 setIsDataLoading(true);
 
                 // Get the spreadsheet ID from your Apps Script
-                const SPREADSHEET_ID = "1pZx7O0Zfz52Gj-jon_UELVvueGcKPV2u0ONVq1IU3EU";
+                const SPREADSHEET_ID = "18lgxCfDKsnLIGpV9t1-ZK2lhaewTcl8n82R0hsUxspY";
 
-                // Construct the URL to read the sheet data directly
-                const sheetUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=master`;
+                // Construct the URL to read the sheet data via Apps Script proxy
+                const sheetUrl = `${SCRIPT_URL}?sheet=master&action=fetch`;
 
                 const response = await fetch(sheetUrl);
-                const text = await response.text();
-
-                // Parse the Google Sheets JSON response
-                const jsonString = text.substring(47).slice(0, -2); // Remove Google's wrapper
-                const data = JSON.parse(jsonString);
+                const data = await response.json();
 
                 // Create userCredentials and userRoles objects from the sheet data
                 const userCredentials = {};

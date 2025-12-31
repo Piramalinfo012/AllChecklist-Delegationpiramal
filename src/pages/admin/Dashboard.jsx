@@ -394,7 +394,7 @@ export default function AdminDashboard() {
       }
 
       // FIXED: Use the correct Google Apps Script endpoint
-      const scriptUrl = 'https://script.google.com/macros/s/AKfycbyaBCq6ZKHhOZBXRp9qw3hqrXh_aIOPvIHh_G41KtzPovhjl-UjEgj75Ok6gwJhrPOX/exec';
+      const scriptUrl = 'https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec';
 
       // Prepare fetch calls
       const fetchPromises = [

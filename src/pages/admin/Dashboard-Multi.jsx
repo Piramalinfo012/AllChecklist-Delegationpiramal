@@ -35,7 +35,7 @@ export default function AdminDashboard() {
 
   // Apps Script URL - UPDATE THIS WITH YOUR DEPLOYED APPS SCRIPT URL
   const APPS_SCRIPT_URL =
-    "https://script.google.com/macros/s/AKfycbyaBCq6ZKHhOZBXRp9qw3hqrXh_aIOPvIHh_G41KtzPovhjl-UjEgj75Ok6gwJhrPOX/exec"
+    "https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec"
 
   // State for department data
   const [departmentData, setDepartmentData] = useState({
@@ -297,18 +297,14 @@ export default function AdminDashboard() {
         return;
       }
 
-      // Fallback to gviz only if Apps Script completely fails
+      // Fallback to Apps Script proxy if initial attempt fails
       const response = await fetch(
-        `https://script.google.com/macros/s/AKfycbyaBCq6ZKHhOZBXRp9qw3hqrXh_aIOPvIHh_G41KtzPovhjl-UjEgj75Ok6gwJhrPOX/exec/gviz/tq?tqx=out:json&sheet=MASTER`
+        `${APPS_SCRIPT_URL}?sheet=MASTER&action=fetch`
       );
 
       if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
 
-      const text = await response.text();
-      const jsonStart = text.indexOf("{");
-      const jsonEnd = text.lastIndexOf("}");
-      const jsonString = text.substring(jsonStart, jsonEnd + 1);
-      const fallbackData = JSON.parse(jsonString);
+      const fallbackData = await response.json();
 
       const columnAValues = fallbackData.table.rows
         .slice(1)

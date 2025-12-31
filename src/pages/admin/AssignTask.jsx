@@ -193,23 +193,19 @@ export default function AssignTask() {
   // Function to fetch options from master sheet
   const fetchMasterSheetOptions = async () => {
     try {
-      const masterSheetId = "1pZx7O0Zfz52Gj-jon_UELVvueGcKPV2u0ONVq1IU3EU";
+      const masterSheetId = "18lgxCfDKsnLIGpV9t1-ZK2lhaewTcl8n82R0hsUxspY";
       const masterSheetName = "master";
 
-      const url = `https://docs.google.com/spreadsheets/d/${masterSheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(
+      const url = `https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec?sheet=${encodeURIComponent(
         masterSheetName
-      )}`;
+      )}&action=fetch`;
 
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`Failed to fetch master data: ${response.status}`);
       }
 
-      const text = await response.text();
-      const jsonStart = text.indexOf("{");
-      const jsonEnd = text.lastIndexOf("}");
-      const jsonString = text.substring(jsonStart, jsonEnd + 1);
-      const data = JSON.parse(jsonString);
+      const data = await response.json();
 
       if (!data.table || !data.table.rows) {
         // console.log("No master data found");
@@ -316,7 +312,7 @@ export default function AssignTask() {
   // Add a function to get the last task ID from the specified sheet
   const getLastTaskId = async (sheetName) => {
     try {
-      const sheetId = "1pZx7O0Zfz52Gj-jon_UELVvueGcKPV2u0ONVq1IU3EU";
+      const sheetId = "18lgxCfDKsnLIGpV9t1-ZK2lhaewTcl8n82R0hsUxspY";
 
       // Try with the provided sheet name first, then try alternate case
       const sheetNamesToTry = [
@@ -331,18 +327,14 @@ export default function AssignTask() {
 
       for (const trySheetName of sheetNamesToTry) {
         try {
-          const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(
+          const url = `https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec?sheet=${encodeURIComponent(
             trySheetName
-          )}`;
+          )}&action=fetch`;
 
           const response = await fetch(url);
           if (!response.ok) continue;
 
-          const text = await response.text();
-          const jsonStart = text.indexOf("{");
-          const jsonEnd = text.lastIndexOf("}");
-          const jsonString = text.substring(jsonStart, jsonEnd + 1);
-          data = JSON.parse(jsonString);
+          const data = await response.json();
 
           if (data.table && data.table.rows) {
             successfulSheetName = trySheetName;
@@ -394,23 +386,19 @@ export default function AssignTask() {
   // Function to fetch working days from the Working Day Calendar sheet
   const fetchWorkingDays = async () => {
     try {
-      const sheetId = "1pZx7O0Zfz52Gj-jon_UELVvueGcKPV2u0ONVq1IU3EU";
+      const sheetId = "18lgxCfDKsnLIGpV9t1-ZK2lhaewTcl8n82R0hsUxspY";
       const sheetName = "Working Day Calendar";
 
-      const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(
+      const url = `https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec?sheet=${encodeURIComponent(
         sheetName
-      )}`;
+      )}&action=fetch`;
 
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`Failed to fetch working days: ${response.status}`);
       }
 
-      const text = await response.text();
-      const jsonStart = text.indexOf("{");
-      const jsonEnd = text.lastIndexOf("}");
-      const jsonString = text.substring(jsonStart, jsonEnd + 1);
-      const data = JSON.parse(jsonString);
+      const data = await response.json();
 
       if (!data.table || !data.table.rows) {
         // console.log("No working day data found");
@@ -682,12 +670,12 @@ export default function AssignTask() {
       // Helper function to check if this is the first task for the user
       const isFirstTaskForUser = async (doerName) => {
         try {
-          const sheetId = "1pZx7O0Zfz52Gj-jon_UELVvueGcKPV2u0ONVq1IU3EU";
+          const sheetId = "18lgxCfDKsnLIGpV9t1-ZK2lhaewTcl8n82R0hsUxspY";
           const sheetName = "Checklist";
 
-          const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(
+          const url = `https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec?sheet=${encodeURIComponent(
             sheetName
-          )}`;
+          )}&action=fetch`;
 
           const response = await fetch(url);
           if (!response.ok) {
@@ -695,11 +683,7 @@ export default function AssignTask() {
             return true;
           }
 
-          const text = await response.text();
-          const jsonStart = text.indexOf("{");
-          const jsonEnd = text.lastIndexOf("}");
-          const jsonString = text.substring(jsonStart, jsonEnd + 1);
-          const data = JSON.parse(jsonString);
+          const data = await response.json();
 
           if (!data.table || !data.table.rows || data.table.rows.length <= 1) {
             console.log("Checklist sheet is empty - treating as first task");
@@ -789,7 +773,7 @@ export default function AssignTask() {
         formPayload.append("rowData", JSON.stringify(tasksData));
 
         await fetch(
-          "https://script.google.com/macros/s/AKfycbyaBCq6ZKHhOZBXRp9qw3hqrXh_aIOPvIHh_G41KtzPovhjl-UjEgj75Ok6gwJhrPOX/exec",
+          "https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec",
           {
             method: "POST",
             body: formPayload,

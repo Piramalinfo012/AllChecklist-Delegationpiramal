@@ -179,7 +179,7 @@ export default function QuickTask() {
     try {
       setSubmitting(true);
 
-      const userAppScriptUrl = "https://script.google.com/macros/s/AKfycbyaBCq6ZKHhOZBXRp9qw3hqrXh_aIOPvIHh_G41KtzPovhjl-UjEgj75Ok6gwJhrPOX/exec";
+      const userAppScriptUrl = "https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec";
       const userSheetId = CONFIG.SHEET_ID;
 
       if (!userAppScriptUrl || !userSheetId) {
@@ -270,7 +270,7 @@ export default function QuickTask() {
 
 
   const CONFIG = {
-    SHEET_ID: "1pZx7O0Zfz52Gj-jon_UELVvueGcKPV2u0ONVq1IU3EU",
+    SHEET_ID: "18lgxCfDKsnLIGpV9t1-ZK2lhaewTcl8n82R0hsUxspY",
     WHATSAPP_SHEET: "master", // For login credentials and user roles
     CHECKLIST_SHEET: "Unique", // For unique checklist tasks
     DELEGATION_SHEET: "Delegation", // For delegation tasks
@@ -296,15 +296,12 @@ export default function QuickTask() {
         throw new Error("No user logged in. Please log in to access tasks.");
       }
 
-      // Fetch user role from Whatsapp sheet
-      const whatsappSheetUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&sheet=${CONFIG.WHATSAPP_SHEET}`;
-      const response = await fetch(whatsappSheetUrl);
-      const text = await response.text();
+      const userAppScriptUrl = "https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec";
 
-      const jsonStart = text.indexOf('{');
-      const jsonEnd = text.lastIndexOf('}') + 1;
-      const jsonData = text.substring(jsonStart, jsonEnd);
-      const data = JSON.parse(jsonData);
+      // Fetch user role from Whatsapp sheet via Apps Script proxy
+      const whatsappSheetUrl = `${userAppScriptUrl}?sheet=${CONFIG.WHATSAPP_SHEET}&action=fetch`;
+      const response = await fetch(whatsappSheetUrl);
+      const data = await response.json();
 
       console.log("data:", data);
 
@@ -360,15 +357,12 @@ export default function QuickTask() {
     try {
       setLoading(true);
 
-      // Fetch from Checklist sheet (Unique sheet)
-      const checklistUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&sheet=${CONFIG.CHECKLIST_SHEET}`;
-      const response = await fetch(checklistUrl);
-      const text = await response.text();
+      const userAppScriptUrl = "https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec";
 
-      const jsonStart = text.indexOf('{');
-      const jsonEnd = text.lastIndexOf('}') + 1;
-      const jsonData = text.substring(jsonStart, jsonEnd);
-      const data = JSON.parse(jsonData);
+      // Fetch from Checklist sheet (Unique sheet) via Apps Script proxy
+      const checklistUrl = `${userAppScriptUrl}?sheet=${CONFIG.CHECKLIST_SHEET}&action=fetch`;
+      const response = await fetch(checklistUrl);
+      const data = await response.json();
 
       if (data?.table?.rows) {
         const rows = data.table.rows.slice(1); // Skip header
@@ -442,15 +436,12 @@ export default function QuickTask() {
     try {
       setDelegationLoading(true);
 
-      // Fetch from Delegation sheet
-      const delegationUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&sheet=${CONFIG.DELEGATION_SHEET}`;
-      const response = await fetch(delegationUrl);
-      const text = await response.text();
+      const userAppScriptUrl = "https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec";
 
-      const jsonStart = text.indexOf('{');
-      const jsonEnd = text.lastIndexOf('}') + 1;
-      const jsonData = text.substring(jsonStart, jsonEnd);
-      const data = JSON.parse(jsonData);
+      // Fetch from Delegation sheet via Apps Script proxy
+      const delegationUrl = `${userAppScriptUrl}?sheet=${CONFIG.DELEGATION_SHEET}&action=fetch`;
+      const response = await fetch(delegationUrl);
+      const data = await response.json();
 
       if (data?.table?.rows) {
         const rows = data.table.rows.slice(1); // Skip header
@@ -1011,9 +1002,9 @@ export default function QuickTask() {
                                 </select>
                               ) : (
                                 <span className={`px-2 py-1 rounded-full text-xs ${task.Frequency === 'Daily' ? 'bg-blue-100 text-blue-800' :
-                                    task.Frequency === 'Weekly' ? 'bg-green-100 text-green-800' :
-                                      task.Frequency === 'Monthly' ? 'bg-purple-100 text-purple-800' :
-                                        'bg-gray-100 text-gray-800'
+                                  task.Frequency === 'Weekly' ? 'bg-green-100 text-green-800' :
+                                    task.Frequency === 'Monthly' ? 'bg-purple-100 text-purple-800' :
+                                      'bg-gray-100 text-gray-800'
                                   }`}>
                                   {task.Frequency || "—"}
                                 </span>
@@ -1225,9 +1216,9 @@ export default function QuickTask() {
                                 </select>
                               ) : (
                                 <span className={`px-2 py-1 rounded-full text-xs ${task.Frequency === 'Daily' ? 'bg-blue-100 text-blue-800' :
-                                    task.Frequency === 'Weekly' ? 'bg-green-100 text-green-800' :
-                                      task.Frequency === 'Monthly' ? 'bg-purple-100 text-purple-800' :
-                                        'bg-gray-100 text-gray-800'
+                                  task.Frequency === 'Weekly' ? 'bg-green-100 text-green-800' :
+                                    task.Frequency === 'Monthly' ? 'bg-purple-100 text-purple-800' :
+                                      'bg-gray-100 text-gray-800'
                                   }`}>
                                   {task.Frequency || "—"}
                                 </span>

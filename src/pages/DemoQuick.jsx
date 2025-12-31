@@ -31,7 +31,7 @@ export default function QuickTask() {
     console.log("departments", departments);
 
     const CONFIG = {
-        SHEET_ID: "1pZx7O0Zfz52Gj-jon_UELVvueGcKPV2u0ONVq1IU3EU",
+        SHEET_ID: "18lgxCfDKsnLIGpV9t1-ZK2lhaewTcl8n82R0hsUxspY",
         WHATSAPP_SHEET: "Whatsapp", // For login credentials and user roles
         CHECKLIST_SHEET: "Unique task", // For checklist tasks
         DELEGATION_SHEET: "Delegation", // For delegation tasks

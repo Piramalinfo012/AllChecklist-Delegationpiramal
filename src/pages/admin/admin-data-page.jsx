@@ -357,17 +357,13 @@ function AccountDataPage() {
       const pendingAccounts = [];
       const historyRows = [];
 
-      const response = await fetch(`https://script.google.com/macros/s/AKfycbyaBCq6ZKHhOZBXRp9qw3hqrXh_aIOPvIHh_G41KtzPovhjl-UjEgj75Ok6gwJhrPOX/exec/gviz/tq?tqx=out:json&sheet=STORE`);
+      const response = await fetch(`${APPS_SCRIPT_URL}?sheet=STORE&action=fetch`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch data: ${response.status}`);
       }
 
-      const text = await response.text();
-      const jsonStart = text.indexOf('{');
-      const jsonEnd = text.lastIndexOf('}');
-      const jsonString = text.substring(jsonStart, jsonEnd + 1);
-      const data = JSON.parse(jsonString);
+      const data = await response.json();
 
       const username = sessionStorage.getItem('username')
       const userRole = sessionStorage.getItem('role')

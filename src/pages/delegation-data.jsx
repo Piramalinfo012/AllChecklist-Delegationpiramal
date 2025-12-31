@@ -25,7 +25,7 @@ export default function DelegationPage({
   const CONFIG = useMemo(
     () => ({
       APPS_SCRIPT_URL:
-        "https://script.google.com/macros/s/AKfycbyaBCq6ZKHhOZBXRp9qw3hqrXh_aIOPvIHh_G41KtzPovhjl-UjEgj75Ok6gwJhrPOX/exec",
+        "https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec",
       DELEGATION_SHEET: "Delegation",
     }),
     []
@@ -317,12 +317,12 @@ export default function DelegationPage({
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <span
                       className={`px-2 py-1 rounded-full text-xs ${task.Freq === "Daily"
-                          ? "bg-blue-100 text-blue-800"
-                          : task.Freq === "Weekly"
-                            ? "bg-green-100 text-green-800"
-                            : task.Freq === "Monthly"
-                              ? "bg-purple-100 text-purple-800"
-                              : "bg-gray-100 text-gray-800"
+                        ? "bg-blue-100 text-blue-800"
+                        : task.Freq === "Weekly"
+                          ? "bg-green-100 text-green-800"
+                          : task.Freq === "Monthly"
+                            ? "bg-purple-100 text-purple-800"
+                            : "bg-gray-100 text-gray-800"
                         }`}
                     >
                       {task.Freq || "—"}
@@ -436,12 +436,12 @@ export default function DelegationPage({
                   <span className="font-medium text-gray-700">Frequency:</span>
                   <span
                     className={`px-2 py-1 rounded-full text-xs ${task.Freq === "Daily"
-                        ? "bg-blue-100 text-blue-800"
-                        : task.Freq === "Weekly"
-                          ? "bg-green-100 text-green-800"
-                          : task.Freq === "Monthly"
-                            ? "bg-purple-100 text-purple-800"
-                            : "bg-gray-100 text-gray-800"
+                      ? "bg-blue-100 text-blue-800"
+                      : task.Freq === "Weekly"
+                        ? "bg-green-100 text-green-800"
+                        : task.Freq === "Monthly"
+                          ? "bg-purple-100 text-purple-800"
+                          : "bg-gray-100 text-gray-800"
                       }`}
                   >
                     {task.Freq || "—"}
