@@ -334,9 +334,10 @@ export default function AssignTask() {
           const response = await fetch(url);
           if (!response.ok) continue;
 
-          const data = await response.json();
+          const responseData = await response.json();
 
-          if (data.table && data.table.rows) {
+          if (responseData.table && responseData.table.rows) {
+            data = responseData;
             successfulSheetName = trySheetName;
             break;
           }
@@ -782,27 +783,18 @@ export default function AssignTask() {
 
         // Prepare all tasks data for batch insertion
         const tasksData = generatedTasks.map((task, index) => {
-          const baseData = {
+          return {
             timestamp: getCurrentTimestamp(),
-            department: formData.department,
-            givenBy: formData.givenBy,
-            name: formData.doer,
+            taskId: needsTaskId ? (nextTaskId + index).toString() : "",
+            department: task.department || formData.department,
+            givenBy: task.givenBy || formData.givenBy,
+            name: task.doer || formData.doer,
             description: task.description,
             startDate: task.dueDate,
             freq: task.frequency,
             enableReminders: task.enableReminders ? "Yes" : "No",
             requireAttachment: task.requireAttachment ? "Yes" : "No"
           };
-
-          // Only add taskId for sheets other than Checklist
-          if (needsTaskId) {
-            return {
-              ...baseData,
-              taskId: (nextTaskId + index).toString()
-            };
-          }
-
-          return baseData;
         });
 
         console.log(`Submitting ${tasksData.length} tasks to ${sheetName} sheet`);

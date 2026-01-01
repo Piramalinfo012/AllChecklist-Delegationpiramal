@@ -73,6 +73,7 @@ function AccountDataPage() {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cameraStream, setCameraStream] = useState(null);
   const [cameraError, setCameraError] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [isCameraLoading, setIsCameraLoading] = useState(false); // ✅ Ye line check karo
@@ -465,6 +466,7 @@ function AccountDataPage() {
     setSelectedMembers([]);
     setStartDate("");
     setEndDate("");
+    setStatusFilter("all");
   };
 
   // NEW: Edit functionality functions
@@ -729,7 +731,7 @@ function AccountDataPage() {
 
   // Memoized filtered data to prevent unnecessary re-renders
   const filteredAccountData = useMemo(() => {
-    const filtered = searchTerm
+    let filtered = searchTerm
       ? accountData.filter((account) =>
         Object.values(account).some(
           (value) =>
@@ -738,8 +740,35 @@ function AccountDataPage() {
         )
       )
       : accountData;
+
+    // Apply Status Filter
+    if (statusFilter !== "all") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      filtered = filtered.filter((account) => {
+        const dateStr = account["col6"] || "";
+        if (!dateStr) return false;
+
+        const datePart = dateStr.split(" ")[0];
+        const parsedDate = parseDateFromDDMMYYYY(datePart);
+        if (!parsedDate) return false;
+
+        const taskDate = new Date(parsedDate);
+        taskDate.setHours(0, 0, 0, 0);
+
+        const timeDiff = taskDate.getTime() - today.getTime();
+        const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+        if (statusFilter === "today") return dayDiff === 0;
+        if (statusFilter === "overdue") return dayDiff < 0;
+        if (statusFilter === "upcoming") return dayDiff > 0;
+        return true;
+      });
+    }
+
     return filtered.sort(sortDateWise);
-  }, [accountData, searchTerm]);
+  }, [accountData, searchTerm, statusFilter]);
 
   const filteredHistoryData = useMemo(() => {
     return historyData
@@ -1310,6 +1339,22 @@ function AccountDataPage() {
                 </select>
               </div>
             )}
+
+            {/* NEW: Status Filter Dropdown */}
+            <div className="relative w-full sm:w-48">
+
+              <select
+                id="status-filter"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-purple-200 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="all">All Pending</option>
+                <option value="today">Today</option>
+                <option value="upcoming">Upcoming</option>
+                <option value="overdue">Overdue</option>
+              </select>
+            </div>
 
             {/* Toggle history button */}
             {/* <button
