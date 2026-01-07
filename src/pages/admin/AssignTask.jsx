@@ -710,8 +710,8 @@ export default function AssignTask() {
         return;
       }
 
-      // Helper function to check if this is the first task for the user
-      const isFirstTaskForUser = async (doerName) => {
+      // Helper function to check if this specific task (Name + Description) is new for the user
+      const isTaskNewForUser = async (doerName, taskDescription) => {
         try {
           const sheetId = "1V-KUuP_y1FyYahbyzErir160DXpN9erDm1wJw52vhcY";
           const sheetName = "Checklist";
@@ -722,51 +722,55 @@ export default function AssignTask() {
 
           const response = await fetch(url);
           if (!response.ok) {
-            console.log("Checklist sheet not found - treating as first task");
+            console.log("Checklist sheet not found - treating as new task");
             return true;
           }
 
           const data = await response.json();
 
           if (!data.table || !data.table.rows || data.table.rows.length <= 1) {
-            console.log("Checklist sheet is empty - treating as first task");
+            console.log("Checklist sheet is empty - treating as new task");
             return true;
           }
 
-          // Check if doer name exists in column E (index 4) - "name" column
+          // Check if doer name (col E / index 4) AND description (col F / index 5) exists
           for (let i = 1; i < data.table.rows.length; i++) {
             const row = data.table.rows[i];
-            if (row.c && row.c[4] && row.c[4].v) {
-              const existingDoer = row.c[4].v.toString().trim();
-              if (existingDoer === doerName.trim()) {
-                console.log(`User "${doerName}" found in Checklist - NOT first task`);
-                return false;
-              }
+
+            const rowName = (row.c && row.c[4] && row.c[4].v) ? row.c[4].v.toString().trim() : "";
+            const rowDesc = (row.c && row.c[5] && row.c[5].v) ? row.c[5].v.toString().trim() : "";
+
+            if (rowName === doerName.trim() && rowDesc === taskDescription.trim()) {
+              console.log(`Task "${taskDescription}" for user "${doerName}" found in Checklist - NOT new`);
+              return false;
             }
           }
 
-          console.log(`User "${doerName}" NOT found in Checklist - IS first task`);
+          console.log(`Task "${taskDescription}" for user "${doerName}" NOT found in Checklist - IS new`);
           return true;
         } catch (error) {
-          console.error("Error checking first task:", error);
+          console.error("Error checking new task:", error);
           return true;
         }
       };
 
-      // Determine the sheet(s) based on frequency and first-time user check
+      // Determine the sheet(s) based on frequency and user-task uniqueness
       let submitToSheets = [];
 
       if (formData.frequency === "one-time") {
         submitToSheets = ["DELEGATION"];
         console.log("One-time task - submitting to DELEGATION only");
       } else {
-        const isFirstTask = await isFirstTaskForUser(formData.doer);
-        if (isFirstTask) {
+        // Use the description from the first generated task (assuming all have same description)
+        const currentDescription = generatedTasks[0]?.description || formData.description;
+        const isNew = await isTaskNewForUser(formData.doer, currentDescription);
+
+        if (isNew) {
           submitToSheets = ["Unique", "Checklist"];
-          console.log("First task for user - submitting to both Unique and Checklist");
+          console.log("New task for user - submitting to both Unique and Checklist");
         } else {
           submitToSheets = ["Unique"];
-          console.log("Existing user - submitting to Unique only");
+          console.log("Existing task for user - submitting to Unique only");
         }
       }
 
