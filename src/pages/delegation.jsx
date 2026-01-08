@@ -1881,6 +1881,7 @@ function DelegationDataPage() {
                             selectedItems.size === filteredAccountData.length
                           }
                           onChange={handleSelectAllItems}
+                          disabled={userRole === "user"}
                         />
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
@@ -1969,6 +1970,7 @@ function DelegationDataPage() {
                                 onChange={(e) =>
                                   handleCheckboxClick(e, account._id)
                                 }
+                                disabled={userRole === "user"}
                               />
                             </td>
                             <td className="px-6 py-4 min-w-[100px]">
@@ -2237,6 +2239,7 @@ function DelegationDataPage() {
                               className="h-5 w-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                               checked={isSelected}
                               onChange={(e) => handleCheckboxClick(e, account._id)}
+                              disabled={userRole === "user"}
                             />
                           </div>
 

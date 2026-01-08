@@ -741,10 +741,30 @@ function AccountDataPage() {
       )
       : accountData;
 
+    // Global Date Filter: Show only tasks till today (exclude upcoming)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    filtered = filtered.filter((account) => {
+      const dateStr = account["col6"] || "";
+      if (!dateStr) return true; // Keep tasks without dates
+
+      const datePart = dateStr.split(" ")[0];
+      const parsedDate = parseDateFromDDMMYYYY(datePart);
+      if (!parsedDate) return true;
+
+      const taskDate = new Date(parsedDate);
+      taskDate.setHours(0, 0, 0, 0);
+
+      // Exclude future dates
+      return taskDate <= today;
+    });
+
     // Apply Status Filter
     if (statusFilter !== "all") {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      // Create a new date object for comparison within status filter
+      const filterToday = new Date();
+      filterToday.setHours(0, 0, 0, 0);
 
       filtered = filtered.filter((account) => {
         const dateStr = account["col6"] || "";
@@ -757,18 +777,19 @@ function AccountDataPage() {
         const taskDate = new Date(parsedDate);
         taskDate.setHours(0, 0, 0, 0);
 
-        const timeDiff = taskDate.getTime() - today.getTime();
+        const timeDiff = taskDate.getTime() - filterToday.getTime();
         const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
 
         if (statusFilter === "today") return dayDiff === 0;
         if (statusFilter === "overdue") return dayDiff < 0;
+        // Upcoming will effectively return nothing now, which is expected
         if (statusFilter === "upcoming") return dayDiff > 0;
         return true;
       });
     }
 
     return filtered.sort(sortDateWise);
-  }, [accountData, searchTerm, statusFilter]);
+  }, [accountData, searchTerm, statusFilter, parseDateFromDDMMYYYY]);
 
   const filteredHistoryData = useMemo(() => {
     return historyData
@@ -1351,7 +1372,7 @@ function AccountDataPage() {
               >
                 <option value="all">All Pending</option>
                 <option value="today">Today</option>
-                <option value="upcoming">Upcoming</option>
+                {/* <option value="upcoming">Upcoming</option> */}
                 <option value="overdue">Overdue</option>
               </select>
             </div>
