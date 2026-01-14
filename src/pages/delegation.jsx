@@ -1781,7 +1781,7 @@ function DelegationDataPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[50px]">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-14 max-md:sticky max-md:left-0 max-md:z-30 bg-gray-50">
                         <input
                           type="checkbox"
                           className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
@@ -1793,7 +1793,7 @@ function DelegationDataPage() {
                           disabled={userRole === "user"}
                         />
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px] max-md:sticky max-md:left-14 max-md:z-30 bg-gray-50 border-r border-gray-200">
                         Task ID
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
@@ -1868,22 +1868,24 @@ function DelegationDataPage() {
                     ${isTodayTask || isOverdueTask || isUpcomingTask ? "relative" : ""}
                   `}
                           >
-                            <td className="px-6 py-4 min-w-[50px] relative">
-                              {isTodayTask && (
-                                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-b-md shadow-md z-10 whitespace-nowrap">
-                                  TODAY
-                                </div>
-                              )}
-                              {isOverdueTask && (
-                                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-b-md shadow-md z-10 whitespace-nowrap">
-                                  OVERDUE
-                                </div>
-                              )}
-                              {isUpcomingTask && (
-                                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-b-md shadow-md z-10 whitespace-nowrap">
-                                  UPCOMING
-                                </div>
-                              )}
+                            <td className={`px-6 py-4 w-14 relative max-md:sticky max-md:left-0 max-md:z-10 ${isSelected ? "bg-purple-50" : "bg-white"}`}>
+                              <div className="absolute -top-2 left-0 right-0 mx-auto z-10 whitespace-nowrap text-xs font-bold px-1 py-1 rounded-md shadow-md w-fit">
+                                {isTodayTask && (
+                                  <div className="bg-amber-500 text-white text-center px-1 w-full scale-90">
+                                    TODAY
+                                  </div>
+                                )}
+                                {isOverdueTask && (
+                                  <div className="bg-red-600 text-white text-center px-1 w-full scale-90">
+                                    OVERDUE
+                                  </div>
+                                )}
+                                {isUpcomingTask && (
+                                  <div className="bg-blue-500 text-white text-center px-1 w-full scale-90">
+                                    UPCOMING
+                                  </div>
+                                )}
+                              </div>
                               <input
                                 type="checkbox"
                                 className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
@@ -1894,7 +1896,7 @@ function DelegationDataPage() {
                                 disabled={userRole === "user"}
                               />
                             </td>
-                            <td className="px-6 py-4 min-w-[100px]">
+                            <td className={`px-6 py-4 min-w-[100px] max-md:sticky max-md:left-14 max-md:z-10 border-r border-gray-200 ${isSelected ? "bg-purple-50" : "bg-white"}`}>
                               <div className="text-sm text-gray-900 whitespace-normal break-words">
                                 {account["col1"] || "—"}
                               </div>
