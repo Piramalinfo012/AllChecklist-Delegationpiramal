@@ -962,7 +962,7 @@ export default function AdminDashboard() {
     return (
       <>
 
-        <div className="hidden sm:block rounded-md border border-gray-200 overflow-x-auto">
+        <div className="rounded-md border border-gray-200 overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -1029,67 +1029,7 @@ export default function AdminDashboard() {
 
 
 
-        {/* Mobile Card View */}
-        <div className="sm:hidden space-y-4">
-          {staffMembersWithCurrentTasks.map((staff) => (
-            <div key={staff.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:bg-gray-50">
-              <div className="space-y-3">
-                {/* Name and Email */}
-                <div className="flex justify-between items-center border-b pb-2">
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">{staff.name}</div>
-                    <div className="text-xs text-gray-500">{staff.email}</div>
-                  </div>
-                  <div>
-                    {staff.progress >= 80 ? (
-                      <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        Excellent
-                      </span>
-                    ) : staff.progress >= 60 ? (
-                      <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                        Good
-                      </span>
-                    ) : (
-                      <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                        Needs Improvement
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Task Statistics */}
-                <div className="grid grid-cols-3 gap-4 border-b pb-2">
-                  <div className="text-center">
-                    <div className="text-sm font-medium text-gray-700">Total</div>
-                    <div className="text-lg font-bold text-gray-900">{staff.totalTasks}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-sm font-medium text-gray-700">Completed</div>
-                    <div className="text-lg font-bold text-green-600">{staff.completedTasks}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-sm font-medium text-gray-700">Pending</div>
-                    <div className="text-lg font-bold text-amber-600">{staff.pendingTasks}</div>
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">Progress</span>
-                    <span className="text-sm font-bold text-gray-900">{staff.progress}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div
-                      className="bg-blue-600 h-3 rounded-full transition-all duration-300"
-                      style={{ width: `${staff.progress}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Mobile Card View Removed */}
       </>
     );
   };
@@ -1277,7 +1217,7 @@ export default function AdminDashboard() {
               </div>
             ) : (
               <>
-                <div className="hidden sm:block overflow-x-auto" style={{ maxHeight: "400px", overflowY: "auto" }}>
+                <div className="overflow-x-auto" style={{ maxHeight: "400px", overflowY: "auto" }}>
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50 sticky top-0 z-10">
                       <tr>
@@ -1319,56 +1259,7 @@ export default function AdminDashboard() {
                 </div>
 
 
-                {/* Mobile Card View */}
-                <div className="sm:hidden space-y-4" style={{ maxHeight: "400px", overflowY: "auto" }}>
-                  {getTasksByView(taskView).map((task) => (
-                    <div key={task.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:bg-gray-50">
-                      <div className="space-y-3">
-                        {/* Task ID */}
-                        <div className="flex justify-between items-center border-b pb-2">
-                          <span className="font-medium text-gray-700">Task ID:</span>
-                          <div className="text-sm text-gray-900 break-words">
-                            {task.id}
-                          </div>
-                        </div>
-
-                        {/* Task Description */}
-                        <div className="flex justify-between items-start border-b pb-2">
-                          <span className="font-medium text-gray-700">Description:</span>
-                          <div className="text-sm text-gray-500 break-words text-right max-w-[60%]">
-                            {task.title}
-                          </div>
-                        </div>
-
-                        {/* Assigned To */}
-                        <div className="flex justify-between items-center border-b pb-2">
-                          <span className="font-medium text-gray-700">Assigned To:</span>
-                          <div className="text-sm text-gray-500 break-words">
-                            {task.assignedTo}
-                          </div>
-                        </div>
-
-                        {/* Task End Date */}
-                        <div className="flex justify-between items-center border-b pb-2">
-                          <span className="font-medium text-gray-700">End Date:</span>
-                          <div className="text-sm text-gray-500 break-words">
-                            {task.taskStartDate}
-                          </div>
-                        </div>
-
-                        {/* Frequency */}
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium text-gray-700">Frequency:</span>
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${getFrequencyColor(task.frequency)}`}
-                          >
-                            {task.frequency.charAt(0).toUpperCase() + task.frequency.slice(1)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {/* Mobile Card View Removed */}
               </>
             )}
           </div>

@@ -592,11 +592,11 @@ function AccountDataPage() {
         const missingRemarks = selectedItemsArray.filter((id) => {
             const additionalStatus = additionalData[id];
             const remarks = remarksData[id];
-            return additionalStatus === "No" && (!remarks || remarks.trim() === "");
+            return (additionalStatus === "No" || additionalStatus === "Not Done") && (!remarks || remarks.trim() === "");
         });
 
         if (missingRemarks.length > 0) {
-            alert(`Please provide remarks for items marked as "No". ${missingRemarks.length} item(s) are missing remarks.`);
+            alert(`Please provide remarks for items marked as "Not Done". ${missingRemarks.length} item(s) are missing remarks.`);
             return;
         }
 
@@ -664,35 +664,21 @@ function AccountDataPage() {
             // Prepare submission data
             for (const id of selectedItemsArray) {
                 const item = accountData.find((account) => account._id === id);
+                const status = additionalData[id] || "";
+
+                // Only submit actualDate (Column K) if status is "Yes" (Done)
+                const actualDateToSubmit = status === "Yes" ? todayFormatted : "";
+
                 submissionData.push({
                     taskId: item["col1"], // Column B
                     rowIndex: item._rowIndex,
-                    actualDate: todayFormatted, // Column K (formatted as DD/MM/YYYY HH:MM:SS)
-                    status: additionalData[id] || "", // Column M
+                    actualDate: actualDateToSubmit, // Column K
+                    status: status, // Column M
                     remarks: remarksData[id] || "", // Column N
                     imageUrl: imageUrlMap[id] || (item.image && typeof item.image === "string" ? item.image : ""), // Column O
                 });
             }
 
-            // Optimistic UI updates
-            const submittedItemsForHistory = selectedItemsArray.map((id) => {
-                const item = accountData.find((account) => account._id === id);
-                return {
-                    ...item,
-                    col10: todayFormatted, // Column K
-                    col12: additionalData[id] || "", // Column M
-                    col13: remarksData[id] || "", // Column N
-                    col14: imageUrlMap[id] || (item.image && typeof item.image === "string" ? item.image : ""), // Column O
-                };
-            });
-
-            // Update local state
-            setAccountData((prev) => prev.filter((item) => !selectedItems.has(item._id)));
-            setHistoryData((prev) => [...submittedItemsForHistory, ...prev]);
-            setSelectedItems(new Set());
-            setAdditionalData({});
-            setRemarksData({});
-            setSuccessMessage(`Successfully submitted ${selectedItemsArray.length} task(s)!`);
 
             // Submit to Google Sheets
             const formData = new FormData();
@@ -706,9 +692,46 @@ function AccountDataPage() {
             });
 
             const result = await response.json();
-            if (!result.success) {
+            if (result.success) {
+                // ONLY update UI state after successful server response
+                // Separate tasks into Done and Not Done
+                const doneTasksForHistory = [];
+                const notDoneTasksToKeep = [];
+
+                selectedItemsArray.forEach((id) => {
+                    const item = accountData.find((account) => account._id === id);
+                    const status = additionalData[id] || "";
+                    const actualDateToSubmit = status === "Yes" ? todayFormatted : "";
+
+                    const updatedItem = {
+                        ...item,
+                        col10: actualDateToSubmit, // Column K
+                        col12: status, // Column M
+                        col13: remarksData[id] || "", // Column N
+                        col14: imageUrlMap[id] || (item.image && typeof item.image === "string" ? item.image : ""), // Column O
+                    };
+
+                    if (status === "Yes") {
+                        doneTasksForHistory.push(updatedItem);
+                    } else {
+                        notDoneTasksToKeep.push(updatedItem);
+                    }
+                });
+
+                setAccountData((prev) => {
+                    const filtered = prev.filter((item) => !selectedItems.has(item._id));
+                    return [...filtered, ...notDoneTasksToKeep];
+                });
+
+                setHistoryData((prev) => [...doneTasksForHistory, ...prev]);
+
+                setSelectedItems(new Set());
+                setAdditionalData({});
+                setRemarksData({});
+                setSuccessMessage(`Successfully submitted ${selectedItemsArray.length} task(s)!`);
+            } else {
                 console.error("Background submission failed:", result.error);
-                // Optionally show an error message
+                alert(`Submission failed: ${result.error || "Please try again."}`);
             }
         } catch (error) {
             console.error("Submission error:", error);
@@ -1108,7 +1131,7 @@ function AccountDataPage() {
                                                         <span
                                                             className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full break-words ${history["col12"] === "Yes"
                                                                 ? "bg-green-100 text-green-800"
-                                                                : history["col12"] === "No"
+                                                                : history["col12"] === "No" || history["col12"] === "Not Done"
                                                                     ? "bg-red-100 text-red-800"
                                                                     : "bg-gray-100 text-gray-800"
                                                                 }`}
@@ -1295,7 +1318,7 @@ function AccountDataPage() {
                                                             value={additionalData[account._id] || ""}
                                                             onChange={(e) => {
                                                                 setAdditionalData((prev) => ({ ...prev, [account._id]: e.target.value }))
-                                                                if (e.target.value !== "No") {
+                                                                if (e.target.value !== "Not Done" && e.target.value !== "No") {
                                                                     setRemarksData((prev) => {
                                                                         const newData = { ...prev }
                                                                         delete newData[account._id]
@@ -1307,7 +1330,7 @@ function AccountDataPage() {
                                                         >
                                                             <option value="">Select...</option>
                                                             <option value="Yes">Yes</option>
-                                                            <option value="No">No</option>
+                                                            <option value="Not Done">Not Done</option>
                                                         </select>
                                                     </td>
                                                     <td className="px-3 py-4 bg-orange-50 min-w-[150px]">

@@ -1229,20 +1229,22 @@ function AccountDataPage() {
       // Prepare submission data
       for (const id of selectedItemsArray) {
         const item = accountData.find((account) => account._id === id);
+        const status = additionalData[id] || "";
 
         const assignedTo = item["col4"] || ""; // Name column
         const isBuddyTask =
           buddyTaskFilter &&
           buddyTaskFilter !== "" &&
           assignedTo.toLowerCase() !== username.toLowerCase();
-        console.log("isbuddyTask", isBuddyTask);
-        console.log("username", username);
+
+        // Only submit actualDate (Column K) if status is "Yes" (Done)
+        const actualDateToSubmit = status === "Yes" ? todayFormatted : "";
 
         submissionData.push({
           taskId: item["col1"], // Column B
           rowIndex: item._rowIndex,
-          actualDate: todayFormatted, // Column K (formatted as DD/MM/YYYY HH:MM:SS)
-          status: additionalData[id] || "", // Column M
+          actualDate: actualDateToSubmit, // Column K
+          status: status, // Column M
           remarks: remarksData[id] || "", // Column N
           imageUrl:
             imageUrlMap[id] ||
@@ -1252,28 +1254,6 @@ function AccountDataPage() {
         });
       }
 
-      // Optimistic UI updates
-      const submittedItemsForHistory = selectedItemsArray.map((id) => {
-        const item = accountData.find((account) => account._id === id);
-        return {
-          ...item,
-          col10: todayFormatted, // Column K
-          col12: additionalData[id] || "", // Column M
-          col13: remarksData[id] || "", // Column N
-          col14:
-            imageUrlMap[id] ||
-            (item.image && typeof item.image === "string" ? item.image : ""), // Column O
-        };
-      });
-
-      // Update local state
-      setAccountData((prev) =>
-        prev.filter((item) => !selectedItems.has(item._id))
-      );
-      setHistoryData((prev) => [...submittedItemsForHistory, ...prev]);
-      setSelectedItems(new Set());
-      setAdditionalData({});
-      setRemarksData({});
 
       // Submit to Google Sheets
       const formData = new FormData();
@@ -1290,12 +1270,55 @@ function AccountDataPage() {
 
       const result = await response.json();
       if (result.success) {
+        // ONLY update UI state after successful server response
+        // Separate tasks into Done and Not Done
+        const doneTasksForHistory = [];
+        const notDoneTasksToKeep = [];
+
+        selectedItemsArray.forEach((id) => {
+          const item = accountData.find((account) => account._id === id);
+          const status = additionalData[id] || "";
+          const actualDateToSubmit = status === "Yes" ? todayFormatted : "";
+
+          const updatedItem = {
+            ...item,
+            col10: actualDateToSubmit, // Column K
+            col12: status, // Column M
+            col13: remarksData[id] || "", // Column N
+            col14:
+              imageUrlMap[id] ||
+              (item.image && typeof item.image === "string" ? item.image : ""), // Column O
+          };
+
+          // Only move to history if status is "Yes" (Done)
+          if (status === "Yes") {
+            doneTasksForHistory.push(updatedItem);
+          } else {
+            // Keep "Not Done" tasks in pending with updated data
+            notDoneTasksToKeep.push(updatedItem);
+          }
+        });
+
+        // Update accountData: remove Done tasks, keep Not Done tasks with updated data
+        setAccountData((prev) => {
+          // Remove all selected items first
+          const filtered = prev.filter((item) => !selectedItems.has(item._id));
+          // Add back the Not Done tasks with updated data
+          return [...filtered, ...notDoneTasksToKeep];
+        });
+
+        // Only add Done tasks to history
+        setHistoryData((prev) => [...doneTasksForHistory, ...prev]);
+
+        setSelectedItems(new Set());
+        setAdditionalData({});
+        setRemarksData({});
         setSuccessMessage(
           `Successfully submitted ${selectedItemsArray.length} task(s)!`
         );
       } else {
         console.error("Background submission failed:", result.error);
-        // Optionally show an error message
+        alert(`Submission failed: ${result.error || "Please try again."}`);
       }
     } catch (error) {
       console.error("Submission error:", error);
@@ -1621,7 +1644,7 @@ function AccountDataPage() {
               </div>
 
               {/* History Table - Optimized for performance */}
-              <div className="h-[calc(100vh-300px)] overflow-auto">
+              <div className="overflow-x-auto h-[calc(100vh-300px)]">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50 sticky top-0 z-10">
                     <tr>
@@ -2098,8 +2121,8 @@ function AccountDataPage() {
             </>
           ) : (
             <>
-              {/* /* Regular Tasks Table - Optimized for performance */}
-              <div className="hidden sm:block h-[calc(100vh-250px)] overflow-auto">
+              {/* Regular Tasks Table - Optimized for performance */}
+              <div className="overflow-x-auto h-[calc(100vh-250px)]">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50 sticky top-0 z-10">
                     <tr>
@@ -2431,300 +2454,6 @@ function AccountDataPage() {
                     )}
                   </tbody>
                 </table>
-              </div>
-
-              {/* Mobile Card View for Regular Tasks */}
-              <div className="sm:hidden space-y-4 p-4 max-h-[calc(100vh-250px)] overflow-auto">
-                {filteredAccountData.length > 0 ? (
-                  filteredAccountData.map((account) => {
-                    const isSelected = selectedItems.has(account._id);
-                    return (
-                      <div
-                        key={account._id}
-                        className={`bg-white border border-gray-200 rounded-lg p-4 shadow-sm ${isSelected ? "bg-purple-50 border-purple-200" : ""
-                          }`}
-                      >
-                        <div className="space-y-3">
-                          {/* Checkbox */}
-                          <div className="flex justify-between items-center border-b pb-2">
-                            <span className="font-medium text-gray-700">
-                              Select:
-                            </span>
-                            <input
-                              type="checkbox"
-                              className="h-5 w-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                              checked={isSelected}
-                              onChange={(e) =>
-                                handleCheckboxClick(e, account._id)
-                              }
-                            />
-                          </div>
-
-                          {/* Task ID */}
-                          <div className="flex justify-between items-center border-b pb-2">
-                            <span className="font-medium text-gray-700">
-                              Task ID:
-                            </span>
-                            <div className="text-sm text-gray-900 break-words">
-                              {account["col1"] || "—"}
-                            </div>
-                          </div>
-
-                          {/* Department Name (Admin only) */}
-                          {isAdmin && (
-                            <div className="flex justify-between items-center border-b pb-2">
-                              <span className="font-medium text-gray-700">
-                                Department:
-                              </span>
-                              <div className="text-sm text-gray-900 break-words">
-                                {account["col2"] || "—"}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Given By (Admin only) */}
-                          {isAdmin && (
-                            <div className="flex justify-between items-center border-b pb-2">
-                              <span className="font-medium text-gray-700">
-                                Given By:
-                              </span>
-                              <div className="text-sm text-gray-900 break-words">
-                                {account["col3"] || "—"}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Name (Admin only) */}
-                          {isAdmin && (
-                            <div className="flex justify-between items-center border-b pb-2">
-                              <span className="font-medium text-gray-700">
-                                Name:
-                              </span>
-                              <div className="text-sm text-gray-900 break-words">
-                                {account["col4"] || "—"}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Task Description */}
-                          <div className="flex justify-between items-start border-b pb-2">
-                            <span className="font-medium text-gray-700">
-                              Description:
-                            </span>
-                            <div className="text-sm text-gray-900 break-words text-right max-w-[60%]">
-                              {account["col5"] || "—"}
-                            </div>
-                          </div>
-
-                          {/* Task Start Date */}
-                          <div className="flex justify-between items-center border-b pb-2">
-                            <span className="font-medium text-gray-700">
-                              Start Date:
-                            </span>
-                            <div className="text-sm text-gray-900 break-words text-right">
-                              {account["col6"] ? (
-                                <div>
-                                  <div className="font-medium break-words">
-                                    {account["col6"].includes(" ")
-                                      ? account["col6"].split(" ")[0]
-                                      : account["col6"]}
-                                  </div>
-                                  {account["col6"].includes(" ") && (
-                                    <div className="text-xs text-gray-500 break-words">
-                                      {account["col6"].split(" ")[1]}
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                "—"
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Freq */}
-                          <div className="flex justify-between items-center border-b pb-2">
-                            <span className="font-medium text-gray-700">
-                              Frequency:
-                            </span>
-                            <div className="text-sm text-gray-900 break-words">
-                              {account["col7"] || "—"}
-                            </div>
-                          </div>
-
-                          {/* Enable Reminders (Admin only) */}
-                          {isAdmin && (
-                            <div className="flex justify-between items-center border-b pb-2">
-                              <span className="font-medium text-gray-700">
-                                Reminders:
-                              </span>
-                              <div className="text-sm text-gray-900 break-words">
-                                {account["col8"] || "—"}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Require Attachment */}
-                          <div className="flex justify-between items-center border-b pb-2">
-                            <span className="font-medium text-gray-700">
-                              Attachment Required:
-                            </span>
-                            <div className="text-sm text-gray-900 break-words">
-                              {account["col9"] || "—"}
-                            </div>
-                          </div>
-
-                          {/* Status */}
-                          <div className="flex justify-between items-center border-b pb-2">
-                            <span className="font-medium text-gray-700">
-                              Status:
-                            </span>
-                            <select
-                              disabled={!isSelected}
-                              value={additionalData[account._id] || ""}
-                              onChange={(e) => {
-                                setAdditionalData((prev) => ({
-                                  ...prev,
-                                  [account._id]: e.target.value,
-                                }));
-                                if (e.target.value !== "No") {
-                                  setRemarksData((prev) => {
-                                    const newData = { ...prev };
-                                    delete newData[account._id];
-                                    return newData;
-                                  });
-                                }
-                              }}
-                              className="border border-gray-300 rounded-md px-2 py-1 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
-                            >
-                              <option value="">Select...</option>
-                              <option value="Yes">Yes</option>
-                              <option value="Not Done">Not Done</option>
-                            </select>
-                          </div>
-
-                          {/* Remarks */}
-                          <div className="flex justify-between items-start border-b pb-2">
-                            <span className="font-medium text-gray-700">
-                              Remarks:
-                            </span>
-                            <input
-                              type="text"
-                              placeholder="Enter remarks"
-                              disabled={
-                                !isSelected || !additionalData[account._id]
-                              }
-                              value={remarksData[account._id] || ""}
-                              onChange={(e) =>
-                                setRemarksData((prev) => ({
-                                  ...prev,
-                                  [account._id]: e.target.value,
-                                }))
-                              }
-                              className="border rounded-md px-2 py-1 border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm break-words w-32"
-                            />
-                          </div>
-
-                          {/* ✅ MOBILE: Upload Image Section */}
-                          <div className="border-b pb-3">
-                            <span className="font-medium text-gray-700 block mb-2">Upload Image:</span>
-
-                            {account.image ? (
-                              // ✅ SHOW UPLOADED IMAGE
-                              <div className="flex items-center mt-2">
-                                <img
-                                  src={
-                                    typeof account.image === "string"
-                                      ? account.image
-                                      : URL.createObjectURL(account.image)
-                                  }
-                                  alt="Receipt"
-                                  className="h-12 w-12 object-cover rounded-md mr-3"
-                                />
-                                <div className="flex flex-col">
-                                  <span className="text-sm text-gray-700 font-medium">
-                                    {account.image instanceof File ? account.image.name : "Uploaded Image"}
-                                  </span>
-                                  {account.image instanceof File ? (
-                                    <span className="text-xs text-green-600">✓ Ready to upload</span>
-                                  ) : (
-                                    <button
-                                      className="text-xs text-purple-600 hover:text-purple-800 text-left"
-                                      onClick={() => window.open(account.image, "_blank")}
-                                    >
-                                      View Full Image →
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            ) : (
-                              // ✅ SHOW UPLOAD OPTIONS
-                              <div className="flex flex-col gap-3 mt-2">
-
-                                {/* ✅ CAMERA BUTTON */}
-                                {/* <button
-        onClick={() => {
-          if (!isSelected) return;
-          console.log("📸 Opening camera for:", account._id);
-          setCurrentCaptureId(account._id);
-          startCamera();
-        }}
-        disabled={!isSelected || isCameraLoading}
-        className={`flex items-center justify-center px-4 py-3 rounded-lg border-2 text-sm font-semibold transition-all ${
-          isSelected 
-            ? "bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100 hover:shadow-md active:scale-95" 
-            : "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
-        } disabled:opacity-50`}
-      >
-        <Camera className="h-5 w-5 mr-2" />
-        <span>{isCameraLoading ? "Loading Camera..." : "📸 Take Photo"}</span>
-      </button> */}
-
-                                {/* ✅ FILE UPLOAD BUTTON */}
-                                <label
-                                  className={`flex items-center justify-center px-4 py-3 rounded-lg border-2 text-sm font-semibold transition-all ${isSelected
-                                    ? account["col9"]?.toUpperCase() === "YES"
-                                      ? "bg-red-50 border-red-300 text-red-700 hover:bg-red-100 hover:shadow-md active:scale-95 cursor-pointer"
-                                      : "bg-purple-50 border-purple-300 text-purple-700 hover:bg-purple-100 hover:shadow-md active:scale-95 cursor-pointer"
-                                    : "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
-                                    } ${!isSelected ? "pointer-events-none" : ""}`}
-                                >
-                                  <Upload className="h-5 w-5 mr-2" />
-                                  <span>
-                                    {account["col9"]?.toUpperCase() === "YES"
-                                      ? "📁 Upload (Required*)"
-                                      : "📁 Upload from Gallery"}
-                                  </span>
-                                  <input
-                                    type="file"
-                                    className="hidden"
-                                    accept="image/*"
-                                    onChange={(e) => {
-                                      console.log("📁 File selected for:", account._id);
-                                      handleImageUpload(account._id, e);
-                                    }}
-                                    disabled={!isSelected}
-                                  />
-                                </label>
-
-                                {account["col9"]?.toUpperCase() === "YES" && (
-                                  <p className="text-xs text-red-600 text-center">
-                                    ⚠️ Image upload is mandatory for this task
-                                  </p>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="text-center text-gray-500 py-8">
-                    {searchTerm
-                      ? "No tasks matching your search"
-                      : "No pending tasks found for today, tomorrow, or past due dates"}
-                  </div>
-                )}
               </div>
             </>
           )}

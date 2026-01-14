@@ -1591,7 +1591,7 @@ function DelegationDataPage() {
               </div>
 
               {/* History Table with Proper Text Wrapping */}
-              <div className="hidden sm:block overflow-x-auto">
+              <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
@@ -1728,147 +1728,12 @@ function DelegationDataPage() {
                 </table>
               </div>
 
-              {/* History Table - Mobile Card View */}
-              <div className="sm:hidden space-y-4 p-4">
-                {filteredHistoryData.length > 0 ? (
-                  filteredHistoryData.map((history) => (
-                    <div
-                      key={history._id}
-                      className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:bg-gray-50"
-                    >
-                      <div className="space-y-3">
-                        {/* Timestamp */}
-                        <div className="flex justify-between items-center border-b pb-2">
-                          <span className="font-medium text-gray-700">
-                            Timestamp:
-                          </span>
-                          <div className="text-sm font-medium text-gray-900 break-words text-right">
-                            {formatDateTimeForDisplay(history["col0"]) || "—"}
-                          </div>
-                        </div>
 
-                        {/* Task ID */}
-                        <div className="flex justify-between items-center border-b pb-2">
-                          <span className="font-medium text-gray-700">
-                            Task ID:
-                          </span>
-                          <div className="text-sm text-gray-900 break-words">
-                            {history["col1"] || "—"}
-                          </div>
-                        </div>
-
-                        {/* Task */}
-                        <div className="flex justify-between items-start border-b pb-2">
-                          <span className="font-medium text-gray-700">
-                            Task:
-                          </span>
-                          <div className="text-sm text-gray-900 break-words text-right max-w-[60%]">
-                            {history["col8"] || "—"}
-                          </div>
-                        </div>
-
-                        {/* Status */}
-                        <div className="flex justify-between items-center border-b pb-2">
-                          <span className="font-medium text-gray-700">
-                            Status:
-                          </span>
-                          <span
-                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${history["col2"] === "Done"
-                              ? "bg-green-100 text-green-800"
-                              : history["col2"] === "Extend date"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-gray-100 text-gray-800"
-                              }`}
-                          >
-                            {history["col2"] || "—"}
-                          </span>
-                        </div>
-
-                        {/* Next Target Date */}
-                        <div className="flex justify-between items-center border-b pb-2">
-                          <span className="font-medium text-gray-700">
-                            Next Target Date:
-                          </span>
-                          <div className="text-sm text-gray-900 break-words">
-                            {formatDateTimeForDisplay(history["col3"]) || "—"}
-                          </div>
-                        </div>
-
-                        {/* Remarks */}
-                        <div className="flex justify-between items-start border-b pb-2">
-                          <span className="font-medium text-gray-700">
-                            Remarks:
-                          </span>
-                          <div className="text-sm text-gray-900 break-words text-right max-w-[60%]">
-                            {history["col4"] || "—"}
-                          </div>
-                        </div>
-
-                        {/* Uploaded Image */}
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium text-gray-700">
-                            Attachment:
-                          </span>
-                          {history["col5"] ? (
-                            <a
-                              href={history["col5"]}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 underline flex items-center"
-                            >
-                              <img
-                                src={
-                                  history["col5"] || "/api/placeholder/32/32"
-                                }
-                                alt="Attachment"
-                                className="h-8 w-8 object-cover rounded-md mr-2"
-                              />
-                              <span className="text-xs break-words">View</span>
-                            </a>
-                          ) : (
-                            <span className="text-gray-400 text-xs">
-                              No attachment
-                            </span>
-                          )}
-                        </div>
-
-                        {/* User (Admin only) */}
-                        {userRole === "admin" && (
-                          <div className="flex justify-between items-center border-t pt-2">
-                            <span className="font-medium text-gray-700">
-                              User:
-                            </span>
-                            <div className="text-sm text-gray-900 break-words">
-                              {history["col7"] || "—"}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Given By */}
-                        <div className="flex justify-between items-center border-t pt-2">
-                          <span className="font-medium text-gray-700">
-                            Given By:
-                          </span>
-                          <div className="text-sm text-gray-900 break-words">
-                            {history["col9"] || "—"}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center text-gray-500 py-8">
-                    {searchTerm || startDate || endDate
-                      ? "No historical records matching your filters"
-                      : "No completed records found"}
-                  </div>
-                )}
-              </div>
             </>
           ) : (
             <>
               {/* /* Regular Tasks Table with Proper Text Wrapping */}
-              <div className="hidden sm:block overflow-x-auto">
+              <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
@@ -2207,238 +2072,12 @@ function DelegationDataPage() {
                   </tbody>
                 </table>
               </div>
-
-              {/* Regular Tasks Table - Mobile Card View */}
-              <div className="sm:hidden space-y-4 p-4">
-                {filteredAccountData.length > 0 ? (
-                  filteredAccountData.map((account) => {
-                    const isSelected = selectedItems.has(account._id);
-                    const isDisabled = account.isDisabled;
-                    const isComplete = account.status === "Complete";
-                    const rowColorClass = getRowColor(account["col17"]);
-                    const taskStatus = statusData[account._id] || "";
-                    const isTodayTask = isToday(account["col6"]);
-
-                    return (
-                      <div key={account._id} className={`bg-white border border-gray-200 rounded-lg p-4 shadow-sm ${isSelected ? "bg-purple-50 border-purple-200" : ""
-                        } ${rowColorClass}`}>
-
-                        {/* TODAY Badge */}
-                        {isTodayTask && (
-                          <div className="bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-md shadow-md mb-3 text-center">
-                            TODAY
-                          </div>
-                        )}
-
-                        <div className="space-y-3">
-                          {/* Checkbox */}
-                          <div className="flex justify-between items-center border-b pb-2">
-                            <span className="font-medium text-gray-700">Select:</span>
-                            <input
-                              type="checkbox"
-                              className="h-5 w-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                              checked={isSelected}
-                              onChange={(e) => handleCheckboxClick(e, account._id)}
-                              disabled={userRole === "user"}
-                            />
-                          </div>
-
-                          {/* Task ID */}
-                          <div className="flex justify-between items-center border-b pb-2">
-                            <span className="font-medium text-gray-700">Task ID:</span>
-                            <div className="text-sm text-gray-900 break-words">
-                              {account["col1"] || "—"}
-                            </div>
-                          </div>
-
-                          {/* Department */}
-                          <div className="flex justify-between items-center border-b pb-2">
-                            <span className="font-medium text-gray-700">Department:</span>
-                            <div className="text-sm text-gray-900 break-words">
-                              {account["col2"] || "—"}
-                            </div>
-                          </div>
-
-                          {/* Given By */}
-                          <div className="flex justify-between items-center border-b pb-2">
-                            <span className="font-medium text-gray-700">Given By:</span>
-                            <div className="text-sm text-gray-900 break-words">
-                              {account["col3"] || "—"}
-                            </div>
-                          </div>
-
-                          {/* Name */}
-                          <div className="flex justify-between items-center border-b pb-2">
-                            <span className="font-medium text-gray-700">Name:</span>
-                            <div className="text-sm text-gray-900 break-words">
-                              {account["col4"] || "—"}
-                            </div>
-                          </div>
-
-                          {/* Description */}
-                          <div className="flex justify-between items-start border-b pb-2">
-                            <span className="font-medium text-gray-700">Description:</span>
-                            <div className="text-sm text-gray-900 break-words text-right max-w-[60%]">
-                              {account["col5"] || "—"}
-                            </div>
-                          </div>
-
-                          {/* End Date */}
-                          <div className="flex justify-between items-center border-b pb-2">
-                            <span className="font-medium text-gray-700">End Date:</span>
-                            <div className="text-sm text-gray-900 break-words">
-                              {formatDateTimeForDisplay(account["col6"])}
-                            </div>
-                          </div>
-
-                          {/* Planned Date */}
-                          <div className="flex justify-between items-center border-b pb-2">
-                            <span className="font-medium text-gray-700">Planned Date:</span>
-                            <div className="text-sm text-gray-900 break-words">
-                              {formatDateTimeForDisplay(account["col10"])}
-                            </div>
-                          </div>
-
-                          {/* Status */}
-                          <div className="flex justify-between items-center border-b pb-2">
-                            <span className="font-medium text-gray-700">Status:</span>
-                            <select
-                              disabled={!isSelected}
-                              value={taskStatus}
-                              onChange={(e) => handleStatusChange(account._id, e.target.value)}
-                              className="border border-gray-300 rounded-md px-2 py-1 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
-                            >
-                              <option value="">Select</option>
-                              <option value="Done">Done</option>
-                              <option value="Extend date">Extend date</option>
-                            </select>
-                          </div>
-
-                          {/* Next Target Date */}
-                          <div className="flex justify-between items-center border-b pb-2">
-                            <span className="font-medium text-gray-700">Next Target Date:</span>
-                            <input
-                              type="date"
-                              disabled={!isSelected || taskStatus !== "Extend date"}
-                              value={
-                                nextTargetDate[account._id]
-                                  ? (() => {
-                                    const dateStr = nextTargetDate[account._id];
-                                    if (dateStr && dateStr.includes("/")) {
-                                      const datePart = dateStr.split(" ")[0];
-                                      const [day, month, year] = datePart.split("/");
-                                      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-                                    }
-                                    return dateStr;
-                                  })()
-                                  : ""
-                              }
-                              onChange={(e) => {
-                                const inputDate = e.target.value;
-                                if (inputDate) {
-                                  const [year, month, day] = inputDate.split("-");
-                                  const currentTime = new Date();
-                                  const formattedDateTime = `${day}/${month}/${year} ${currentTime.getHours().toString().padStart(2, "0")}:${currentTime.getMinutes().toString().padStart(2, "0")}:${currentTime.getSeconds().toString().padStart(2, "0")}`;
-                                  handleNextTargetDateChange(account._id, formattedDateTime);
-                                }
-                              }}
-                              className="border border-gray-300 rounded-md px-2 py-1 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
-                            />
-                          </div>
-
-                          {/* Remarks */}
-                          <div className="flex justify-between items-start border-b pb-2">
-                            <span className="font-medium text-gray-700">Remarks:</span>
-                            <textarea
-                              placeholder="Enter remarks"
-                              disabled={!isSelected}
-                              value={remarksData[account._id] || ""}
-                              onChange={(e) => setRemarksData((prev) => ({ ...prev, [account._id]: e.target.value }))}
-                              className="border rounded-md px-2 py-1 border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm resize-none w-32"
-                              rows="2"
-                            />
-                          </div>
-
-                          {/* ✅ CAMERA + GALLERY BUTTONS */}
-                          <div className="text-sm">
-                            <span className="font-medium">Upload Image: </span>
-                            {account.image ? (
-                              <div className="flex items-center mt-2">
-                                <img
-                                  src={
-                                    typeof account.image === "string"
-                                      ? account.image
-                                      : URL.createObjectURL(account.image)
-                                  }
-                                  alt="Receipt"
-                                  className="h-10 w-10 object-cover rounded-md mr-2"
-                                />
-                                <div className="flex flex-col">
-                                  <span className="text-xs text-gray-500">
-                                    {account.image instanceof File ? account.image.name : "Uploaded Receipt"}
-                                  </span>
-                                  {account.image instanceof File ? (
-                                    <span className="text-xs text-green-600">Ready to upload</span>
-                                  ) : (
-                                    <button
-                                      className="text-xs text-purple-600 hover:text-purple-800"
-                                      onClick={() => window.open(account.image, "_blank")}
-                                    >
-                                      View Full Image
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex items-center space-x-2 mt-2">
-                                <button
-                                  onClick={() => {
-                                    if (!isSelected || isDisabled) return;
-                                    setCurrentCaptureId(account._id);
-                                    startCamera();
-                                  }}
-                                  disabled={!isSelected || isDisabled}
-                                  className={`flex items-center px-3 py-2 rounded-lg border-2 text-sm font-medium ${isSelected ? "bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100 shadow-md" : "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
-                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                >
-                                  <Camera className="h-4 w-4 mr-1" />
-                                  <span>Camera</span>
-                                </button>
-
-                                <label className={`flex items-center px-3 py-2 rounded-lg border-2 text-sm font-medium ${isSelected
-                                  ? account["col9"]?.toUpperCase() === "YES"
-                                    ? "bg-red-50 border-red-300 text-red-700 hover:bg-red-100 shadow-md"
-                                    : "bg-purple-50 border-purple-300 text-purple-700 hover:bg-purple-100 shadow-md"
-                                  : "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
-                                  }`}>
-                                  <Upload className="h-4 w-4 mr-1" />
-                                  <span>{account["col9"]?.toUpperCase() === "YES" ? "Required*" : "Gallery"}</span>
-                                  <input
-                                    type="file"
-                                    className="hidden"
-                                    accept="image/*"
-                                    onChange={(e) => handleImageUpload(account._id, e)}
-                                    disabled={!isSelected || isDisabled}
-                                  />
-                                </label>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="text-center text-gray-500 py-8">
-                    No pending tasks found
-                  </div>
-                )}
-              </div>
-
             </>
           )}
         </div>
-        {isCameraOpen && (
+      </div>
+      {
+        isCameraOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full overflow-hidden">
               <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between">
@@ -2495,9 +2134,9 @@ function DelegationDataPage() {
               </div>
             </div>
           </div>
-        )}
-      </div>
-    </AdminLayout>
+        )
+      }
+    </AdminLayout >
   );
 }
 

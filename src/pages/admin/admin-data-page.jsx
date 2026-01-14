@@ -550,15 +550,15 @@ function AccountDataPage() {
       return
     }
 
-    // Validate remarks for items with "No" status
+    // Validate remarks for items with "Not Done" status
     const missingRemarks = selectedItems.filter(id => {
       const additionalStatus = additionalData[id]
       const remarks = remarksData[id]
-      return additionalStatus === "No" && (!remarks || remarks.trim() === "")
+      return (additionalStatus === "No" || additionalStatus === "Not Done") && (!remarks || remarks.trim() === "")
     })
 
     if (missingRemarks.length > 0) {
-      alert(`Please provide remarks for items marked as "No". ${missingRemarks.length} item(s) are missing remarks.`)
+      alert(`Please provide remarks for items marked as "Not Done". ${missingRemarks.length} item(s) are missing remarks.`)
       return
     }
 
@@ -584,6 +584,8 @@ function AccountDataPage() {
 
       const submissionData = await Promise.all(selectedItems.map(async (id) => {
         const item = accountData.find(account => account._id === id)
+        const status = additionalData[id] || ""
+        const todayDateToSubmit = status === "Yes" ? todayFormatted : ""
         let imageData = null
 
         // If there's an image and it's a file (not a URL), convert to base64
@@ -594,12 +596,12 @@ function AccountDataPage() {
         return {
           taskId: id,
           rowIndex: item._rowIndex,
-          additionalInfo: additionalData[id] || "",
+          additionalInfo: status,
           remarks: remarksData[id] || "", // Include remarks for column P
           imageData: imageData,
           folderId: DRIVE_FOLDER_ID,
           // Add today's date for column M (submission date)
-          todayDate: todayFormatted
+          todayDate: todayDateToSubmit
         }
       }))
 
@@ -616,12 +618,33 @@ function AccountDataPage() {
       const result = await response.json()
 
       if (result.success) {
-        setAccountData(prev => prev.map(item =>
-          selectedItems.includes(item._id)
-            ? { ...item, status: "completed", image: null }
-            : item
-        ))
+        // Prepare history items for UI update
+        // Separate tasks into Done and Not Done
+        const doneTasksForHistory = [];
+        const notDoneTasksToKeep = [];
 
+        selectedItems.forEach(id => {
+          const item = accountData.find(account => account._id === id)
+          const status = additionalData[id] || ""
+          const todayDateToSubmit = status === "Yes" ? todayFormatted : ""
+
+          const newRow = { ...item }
+          newRow['col12'] = todayDateToSubmit // Column M
+          newRow['col14'] = status // Column O
+          newRow['col15'] = remarksData[id] || "" // Column P
+
+          if (status === "Yes") {
+            doneTasksForHistory.push(newRow);
+          } else {
+            notDoneTasksToKeep.push(newRow);
+          }
+        })
+
+        setAccountData(prev => {
+          const filtered = prev.filter(item => !selectedItems.includes(item._id));
+          return [...filtered, ...notDoneTasksToKeep];
+        })
+        setHistoryData(prev => [...doneTasksForHistory, ...prev])
         setSuccessMessage(`Successfully processed ${selectedItems.length} account records! Columns M, O and P updated.`)
         setSelectedItems([])
         setAdditionalData({})
@@ -1032,7 +1055,7 @@ function AccountDataPage() {
                             onChange={(e) => {
                               setAdditionalData(prev => ({ ...prev, [account._id]: e.target.value }));
                               // Reset remarks if status changes
-                              if (e.target.value !== "No") {
+                              if (e.target.value !== "Not Done" && e.target.value !== "No") {
                                 setRemarksData(prev => {
                                   const newData = { ...prev };
                                   delete newData[account._id];
@@ -1044,7 +1067,7 @@ function AccountDataPage() {
                           >
                             <option value="">Select...</option>
                             <option value="Yes">Yes</option>
-                            <option value="No">No</option>
+                            <option value="Not Done">Not Done</option>
                           </select>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap bg-orange-50">

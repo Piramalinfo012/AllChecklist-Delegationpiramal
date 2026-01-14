@@ -260,7 +260,7 @@ export default function DelegationPage({
       )}
 
       <div
-        className="hidden sm:block overflow-x-auto"
+        className="overflow-x-auto"
         style={{ maxHeight: "calc(100vh - 220px)" }}
       >
         <table className="min-w-full divide-y divide-gray-200">
@@ -356,128 +356,6 @@ export default function DelegationPage({
         </table>
       </div>
 
-      {/* Delegation Tasks Table - Mobile Card View */}
-      <div
-        className="sm:hidden space-y-4 p-4"
-        style={{ maxHeight: "calc(100vh - 220px)", overflowY: "auto" }}
-      >
-        {loading ? (
-          <div className="p-8 text-center">
-            {/* <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500 mb-2"></div>
-            <p className="text-purple-600">Loading delegation data...</p> */}
-          </div>
-        ) : filteredTasks.length > 0 ? (
-          filteredTasks.map((task) => (
-            <div
-              key={task._id}
-              className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:bg-gray-50"
-            >
-              <div className="space-y-3">
-                {/* Timestamp */}
-                <div className="flex justify-between items-center border-b pb-2">
-                  <span className="font-medium text-gray-700">Timestamp:</span>
-                  <div className="text-sm text-gray-500 break-words">
-                    {task.Timestamp || "—"}
-                  </div>
-                </div>
-
-                {/* Task ID */}
-                <div className="flex justify-between items-center border-b pb-2">
-                  <span className="font-medium text-gray-700">Task ID:</span>
-                  <div className="text-sm font-medium text-gray-900 break-words">
-                    {task["Task ID"] || "—"}
-                  </div>
-                </div>
-
-                {/* Department */}
-                <div className="flex justify-between items-center border-b pb-2">
-                  <span className="font-medium text-gray-700">Department:</span>
-                  <div className="text-sm text-gray-500 break-words">
-                    {task.Department || "—"}
-                  </div>
-                </div>
-
-                {/* Given By */}
-                <div className="flex justify-between items-center border-b pb-2">
-                  <span className="font-medium text-gray-700">Given By:</span>
-                  <div className="text-sm text-gray-500 break-words">
-                    {task["Given By"] || "—"}
-                  </div>
-                </div>
-
-                {/* Name */}
-                <div className="flex justify-between items-center border-b pb-2">
-                  <span className="font-medium text-gray-700">Name:</span>
-                  <div className="text-sm text-gray-500 break-words">
-                    {task.Name || "—"}
-                  </div>
-                </div>
-
-                {/* Task Description */}
-                <div className="flex justify-between items-start border-b pb-2">
-                  <span className="font-medium text-gray-700">
-                    Task Description:
-                  </span>
-                  <div className="text-sm text-gray-500 break-words text-right max-w-[60%]">
-                    {task["Task Description"] || "—"}
-                  </div>
-                </div>
-
-                {/* Task End Date */}
-                <div className="flex justify-between items-center border-b pb-2">
-                  <span className="font-medium text-gray-700">End Date:</span>
-                  <div className="text-sm text-gray-500 break-words bg-yellow-50 px-2 py-1 rounded">
-                    {task["Task End Date"] || "—"}
-                  </div>
-                </div>
-
-                {/* Frequency */}
-                <div className="flex justify-between items-center border-b pb-2">
-                  <span className="font-medium text-gray-700">Frequency:</span>
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs ${task.Freq === "Daily"
-                      ? "bg-blue-100 text-blue-800"
-                      : task.Freq === "Weekly"
-                        ? "bg-green-100 text-green-800"
-                        : task.Freq === "Monthly"
-                          ? "bg-purple-100 text-purple-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
-                  >
-                    {task.Freq || "—"}
-                  </span>
-                </div>
-
-                {/* Enable Reminders */}
-                <div className="flex justify-between items-center border-b pb-2">
-                  <span className="font-medium text-gray-700">Reminders:</span>
-                  <div className="text-sm text-gray-500 break-words">
-                    {task["Enable Reminders"] || "—"}
-                  </div>
-                </div>
-
-                {/* Require Attachment */}
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-gray-700">Attachment:</span>
-                  <div className="text-sm text-gray-500 break-words">
-                    {task["Require Attachment"] || "—"}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="text-center text-gray-500 py-8">
-            {searchTerm || nameFilter || freqFilter
-              ? "No delegation tasks matching your filters"
-              : loading
-                ? "Loading..."
-                : userRole === "admin"
-                  ? "No delegation tasks available"
-                  : "No delegation tasks assigned to you"}
-          </div>
-        )}
-      </div>
     </div>
   );
 }
