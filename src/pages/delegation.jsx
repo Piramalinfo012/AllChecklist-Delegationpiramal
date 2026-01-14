@@ -1854,9 +1854,9 @@ function DelegationDataPage() {
                         const isComplete = account.status === "Complete";
                         const rowColorClass = getRowColor(account["col17"]);
                         const taskStatus = statusData[account._id] || "";
-                        const isTodayTask = isToday(account["col6"]);
-                        const isOverdueTask = isOverdue(account["col6"]);
-                        const isUpcomingTask = isUpcoming(account["col6"]);
+                        const isTodayTask = isToday(account["col10"]);
+                        const isOverdueTask = isOverdue(account["col10"]);
+                        const isUpcomingTask = isUpcoming(account["col10"]);
 
 
                         return (
