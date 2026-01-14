@@ -725,7 +725,7 @@ function AccountDataPage() {
     const selectedItemsArray = Array.from(selectedItems);
     // console.log("sleectedItemsArray", selectedItemsArray);
     return selectedItemsArray.every(
-      (id) => additionalData[id] === "Yes" || additionalData[id] === "Not Done"
+      (id) => additionalData[id] === "Done" || additionalData[id] === "Not Done"
     );
   }, [selectedItems, additionalData]);
 
@@ -1139,29 +1139,36 @@ function AccountDataPage() {
   };
 
   // UPDATED: MAIN SUBMIT FUNCTION - Now also updates Admin Done column (Column P)
-  const handleSubmit = async () => {
-    const selectedItemsArray = Array.from(selectedItems);
+  const handleSubmit = async (specificId = null, specificStatus = null) => {
+    let selectedItemsArray = specificId ? [specificId] : Array.from(selectedItems);
+
+    // Safety: Filter out any IDs that are not present in the current accountData
+    selectedItemsArray = selectedItemsArray.filter(id =>
+      accountData.some(account => account._id === id)
+    );
+
     if (selectedItemsArray.length === 0) {
-      alert("Please select at least one item to submit");
+      if (!specificId) alert("Please select at least one item to submit");
       return;
     }
 
     // Existing validation checks remain the same
     const missingRemarks = selectedItemsArray.filter((id) => {
-      const additionalStatus = additionalData[id];
+      const additionalStatus = id === specificId ? specificStatus : additionalData[id];
       const remarks = remarksData[id];
-      return additionalStatus === "No" && (!remarks || remarks.trim() === "");
+      return (additionalStatus === "Not Done" || additionalStatus === "No") && (!remarks || remarks.trim() === "");
     });
 
     if (missingRemarks.length > 0) {
       alert(
-        `Please provide remarks for items marked as "No". ${missingRemarks.length} item(s) are missing remarks.`
+        `Please provide remarks for items marked as "Not Done". ${missingRemarks.length} item(s) are missing remarks.`
       );
       return;
     }
 
     const missingRequiredImages = selectedItemsArray.filter((id) => {
       const item = accountData.find((account) => account._id === id);
+      if (!item) return false;
       const requiresAttachment =
         item["col9"] && item["col9"].toUpperCase() === "YES";
       return requiresAttachment && !item.image;
@@ -1229,7 +1236,7 @@ function AccountDataPage() {
       // Prepare submission data
       for (const id of selectedItemsArray) {
         const item = accountData.find((account) => account._id === id);
-        const status = additionalData[id] || "";
+        const status = id === specificId ? specificStatus : (additionalData[id] || "");
 
         const assignedTo = item["col4"] || ""; // Name column
         const isBuddyTask =
@@ -1237,8 +1244,8 @@ function AccountDataPage() {
           buddyTaskFilter !== "" &&
           assignedTo.toLowerCase() !== username.toLowerCase();
 
-        // Only submit actualDate (Column K) if status is "Yes" (Done)
-        const actualDateToSubmit = status === "Yes" ? todayFormatted : "";
+        // Submit actualDate (Column K) for all final statuses
+        const actualDateToSubmit = (status === "Done" || status === "Yes" || status === "Not Done" || status === "No") ? todayFormatted : "";
 
         submissionData.push({
           taskId: item["col1"], // Column B
@@ -1277,8 +1284,8 @@ function AccountDataPage() {
 
         selectedItemsArray.forEach((id) => {
           const item = accountData.find((account) => account._id === id);
-          const status = additionalData[id] || "";
-          const actualDateToSubmit = status === "Yes" ? todayFormatted : "";
+          const status = id === specificId ? specificStatus : (additionalData[id] || "");
+          const actualDateToSubmit = (status === "Done" || status === "Yes" || status === "Not Done" || status === "No") ? todayFormatted : "";
 
           const updatedItem = {
             ...item,
@@ -1290,19 +1297,19 @@ function AccountDataPage() {
               (item.image && typeof item.image === "string" ? item.image : ""), // Column O
           };
 
-          // Only move to history if status is "Yes" (Done)
-          if (status === "Yes") {
+          // Move both "Done" and "Not Done" to history
+          if (status === "Done" || status === "Yes" || status === "Not Done" || status === "No") {
             doneTasksForHistory.push(updatedItem);
           } else {
-            // Keep "Not Done" tasks in pending with updated data
+            // Keep in pending ONLY if no status was assigned (shouldn't happen with button enabled logic)
             notDoneTasksToKeep.push(updatedItem);
           }
         });
 
         // Update accountData: remove Done tasks, keep Not Done tasks with updated data
         setAccountData((prev) => {
-          // Remove all selected items first
-          const filtered = prev.filter((item) => !selectedItems.has(item._id));
+          // Remove the submitted items first
+          const filtered = prev.filter((item) => !selectedItemsArray.includes(item._id));
           // Add back the Not Done tasks with updated data
           return [...filtered, ...notDoneTasksToKeep];
         });
@@ -1310,9 +1317,29 @@ function AccountDataPage() {
         // Only add Done tasks to history
         setHistoryData((prev) => [...doneTasksForHistory, ...prev]);
 
-        setSelectedItems(new Set());
-        setAdditionalData({});
-        setRemarksData({});
+        // Clean up state
+        if (specificId) {
+          setSelectedItems((prev) => {
+            const next = new Set(prev);
+            next.delete(specificId);
+            return next;
+          });
+          setAdditionalData((prev) => {
+            const next = { ...prev };
+            delete next[specificId];
+            return next;
+          });
+          setRemarksData((prev) => {
+            const next = { ...prev };
+            delete next[specificId];
+            return next;
+          });
+        } else {
+          setSelectedItems(new Set());
+          setAdditionalData({});
+          setRemarksData({});
+        }
+
         setSuccessMessage(
           `Successfully submitted ${selectedItemsArray.length} task(s)!`
         );
@@ -1421,7 +1448,7 @@ function AccountDataPage() {
             {/* Submit button (only when not history view) */}
             {!showHistory && (
               <button
-                onClick={handleSubmit}
+                onClick={() => handleSubmit()}
                 disabled={!isSubmitEnabled || isSubmitting}
                 className={`rounded-md py-2 px-4 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200 w-full sm:w-auto ${isSubmitEnabled && !isSubmitting
                   ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 cursor-pointer"
@@ -2045,9 +2072,9 @@ function AccountDataPage() {
                             </td>
                             <td className="px-3 py-4 bg-blue-50 min-w-[80px]">
                               <span
-                                className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full break-words ${history["col12"] === "Yes"
+                                className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full break-words ${history["col12"] === "Done" || history["col12"] === "Yes"
                                   ? "bg-green-100 text-green-800"
-                                  : history["col12"] === "No"
+                                  : history["col12"] === "Not Done" || history["col12"] === "No"
                                     ? "bg-red-100 text-red-800"
                                     : "bg-gray-100 text-gray-800"
                                   }`}
@@ -2124,20 +2151,12 @@ function AccountDataPage() {
               {/* Regular Tasks Table - Optimized for performance */}
               <div className="overflow-x-auto h-[calc(100vh-250px)]">
                 <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50 sticky top-0 z-10">
+                  <thead className="bg-gray-50 sticky top-0 z-20">
                     <tr>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                          checked={
-                            filteredAccountData.length > 0 &&
-                            selectedItems.size === filteredAccountData.length
-                          }
-                          onChange={handleSelectAllItems}
-                        />
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16 max-md:sticky max-md:left-0 max-md:z-30 bg-gray-50">
+                        {/* No checkbox here */}
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px] max-md:sticky max-md:left-16 max-md:z-30 bg-gray-50 border-r border-gray-200">
                         Task ID
                       </th>
                       {isAdmin && (
@@ -2191,10 +2210,9 @@ function AccountDataPage() {
                         return (
                           <tr
                             key={account._id}
-                            className={`${isSelected ? "bg-purple-50" : ""
-                              } hover:bg-gray-50`}
+                            className={`${isSelected ? "bg-purple-50" : ""} `}
                           >
-                            <td className="px-3 py-4 w-12 relative">
+                            <td className={`px-3 py-4 w-16 relative max-md:sticky max-md:left-0 max-md:z-10 ${isSelected ? "bg-purple-50" : "bg-white"}`}>
                               {/* Status Label - Fixed positioning */}
                               <div className="absolute -top-2 -left-1 right-0 mx-auto z-10 whitespace-nowrap text-xs font-bold px-2 py-1 rounded-md shadow-md w-fit">
                                 {(() => {
@@ -2216,19 +2234,19 @@ function AccountDataPage() {
 
                                   if (dayDiff === 0) {
                                     return (
-                                      <div className="bg-amber-500 text-white text-center px-2 min-w-[65px]">
+                                      <div className="bg-amber-500 text-white text-center px-1 w-full scale-90">
                                         TODAY
                                       </div>
                                     );
                                   } else if (dayDiff < 0) {
                                     return (
-                                      <div className="bg-red-600 text-white text-center px-2 min-w-[65px]">
+                                      <div className="bg-red-600 text-white text-center px-1 w-full scale-90">
                                         OVERDUE
                                       </div>
                                     );
                                   } else if (dayDiff > 0) {
                                     return (
-                                      <div className="bg-blue-500 text-white text-center px-2 min-w-[65px]">
+                                      <div className="bg-blue-500 text-white text-center px-1 w-full scale-90">
                                         UPCOMING
                                       </div>
                                     );
@@ -2237,14 +2255,9 @@ function AccountDataPage() {
                                 })()}
                               </div>
 
-                              <input
-                                type="checkbox"
-                                className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                                checked={isSelected}
-                                onChange={(e) => handleCheckboxClick(e, account._id)}
-                              />
+                              {/* Checkbox removed */}
                             </td>
-                            <td className="px-3 py-4 min-w-[100px]">
+                            <td className={`px-3 py-4 min-w-[100px] max-md:sticky max-md:left-16 max-md:z-10 border-r border-gray-200 ${isSelected ? "bg-purple-50" : "bg-white"}`}>
                               <div className="text-sm text-gray-900 break-words">
                                 {account["col1"] || "—"}
                               </div>
@@ -2317,19 +2330,25 @@ function AccountDataPage() {
                             </td>
                             <td className="px-3 py-4 bg-yellow-50 min-w-[100px]">
                               <select
-                                disabled={!isSelected}
                                 value={additionalData[account._id] || ""}
                                 onChange={(e) => {
+                                  const newStatus = e.target.value;
                                   setAdditionalData((prev) => ({
                                     ...prev,
-                                    [account._id]: e.target.value,
+                                    [account._id]: newStatus,
                                   }));
-                                  if (e.target.value !== "No") {
+
+                                  // Auto-select for submission
+                                  setSelectedItems((prev) => {
+                                    const next = new Set(prev);
+                                    next.add(account._id);
+                                    return next;
+                                  });
+
+                                  if (newStatus !== "Not Done") {
                                     setRemarksData((prev) => {
                                       const newData = { ...prev };
                                       delete newData[account._id];
-
-                                      // console.log("new DAta",newData);
                                       return newData;
                                     });
                                   }
@@ -2337,7 +2356,7 @@ function AccountDataPage() {
                                 className="border border-gray-300 rounded-md px-2 py-1 w-full disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
                               >
                                 <option value="">Select...</option>
-                                <option value="Yes">Yes</option>
+                                <option value="Done">Done</option>
                                 <option value="Not Done">Not Done</option>
                               </select>
                             </td>
@@ -2345,9 +2364,7 @@ function AccountDataPage() {
                               <input
                                 type="text"
                                 placeholder="Enter remarks"
-                                disabled={
-                                  !isSelected || !additionalData[account._id]
-                                }
+                                disabled={!additionalData[account._id]}
                                 value={remarksData[account._id] || ""}
                                 onChange={(e) =>
                                   setRemarksData((prev) => ({

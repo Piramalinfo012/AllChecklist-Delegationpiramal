@@ -664,6 +664,50 @@ function DelegationDataPage() {
     [formatDateToDDMMYYYY, parseDateFromDDMMYYYY]
   );
 
+  const isOverdue = useCallback(
+    (dateStr) => {
+      if (!dateStr) return false;
+
+      try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const parsedDate = parseDateFromDDMMYYYY(dateStr);
+        if (!parsedDate) return false;
+
+        parsedDate.setHours(0, 0, 0, 0);
+
+        return parsedDate < today;
+      } catch (error) {
+        console.error("Error checking if date is overdue:", error);
+        return false;
+      }
+    },
+    [parseDateFromDDMMYYYY]
+  );
+
+  const isUpcoming = useCallback(
+    (dateStr) => {
+      if (!dateStr) return false;
+
+      try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const parsedDate = parseDateFromDDMMYYYY(dateStr);
+        if (!parsedDate) return false;
+
+        parsedDate.setHours(0, 0, 0, 0);
+
+        return parsedDate > today;
+      } catch (error) {
+        console.error("Error checking if date is upcoming:", error);
+        return false;
+      }
+    },
+    [parseDateFromDDMMYYYY]
+  );
+
   const sortDateWise = useCallback(
     (a, b) => {
       const dateStrA = a["col6"] || "";
@@ -1811,6 +1855,8 @@ function DelegationDataPage() {
                         const rowColorClass = getRowColor(account["col17"]);
                         const taskStatus = statusData[account._id] || "";
                         const isTodayTask = isToday(account["col6"]);
+                        const isOverdueTask = isOverdue(account["col6"]);
+                        const isUpcomingTask = isUpcoming(account["col6"]);
 
 
                         return (
@@ -1819,13 +1865,23 @@ function DelegationDataPage() {
                             className={`${isSelected ? "bg-purple-50" : ""} 
                     hover:bg-gray-50 
                     ${rowColorClass}
-                    ${isTodayTask ? "relative" : ""}
+                    ${isTodayTask || isOverdueTask || isUpcomingTask ? "relative" : ""}
                   `}
                           >
                             <td className="px-6 py-4 min-w-[50px] relative">
                               {isTodayTask && (
                                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-b-md shadow-md z-10 whitespace-nowrap">
                                   TODAY
+                                </div>
+                              )}
+                              {isOverdueTask && (
+                                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-b-md shadow-md z-10 whitespace-nowrap">
+                                  OVERDUE
+                                </div>
+                              )}
+                              {isUpcomingTask && (
+                                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-b-md shadow-md z-10 whitespace-nowrap">
+                                  UPCOMING
                                 </div>
                               )}
                               <input
