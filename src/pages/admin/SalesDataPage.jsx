@@ -720,14 +720,14 @@ function AccountDataPage() {
   };
 
   const isSubmitEnabled = useMemo(() => {
-    if (selectedItems.size === 0) return false;
-
-    const selectedItemsArray = Array.from(selectedItems);
-    // console.log("sleectedItemsArray", selectedItemsArray);
-    return selectedItemsArray.every(
-      (id) => additionalData[id] === "Done" || additionalData[id] === "Not Done"
-    );
-  }, [selectedItems, additionalData]);
+  if (selectedItems.size === 0) return false;
+  
+  // Check if all selected items have valid status
+  const selectedItemsArray = Array.from(selectedItems);
+  return selectedItemsArray.every(
+    (id) => additionalData[id] === "Done" || additionalData[id] === "Not Done"
+  );
+}, [selectedItems, additionalData]);
 
   // Memoized filtered data to prevent unnecessary re-renders
   const filteredAccountData = useMemo(() => {
@@ -1038,61 +1038,6 @@ function AccountDataPage() {
     fetchSheetData();
   }, [fetchSheetData]);
 
-  // Checkbox handlers with better state management
-  const handleSelectItem = useCallback((id, isChecked) => {
-    // console.log(`Checkbox action: ${id} -> ${isChecked}`)
-    setSelectedItems((prev) => {
-      const newSelected = new Set(prev);
-      if (isChecked) {
-        newSelected.add(id);
-      } else {
-        newSelected.delete(id);
-        // Clean up related data when unchecking
-        setAdditionalData((prevData) => {
-          const newAdditionalData = { ...prevData };
-          delete newAdditionalData[id];
-          return newAdditionalData;
-        });
-        setRemarksData((prevRemarks) => {
-          const newRemarksData = { ...prevRemarks };
-          delete newRemarksData[id];
-          return newRemarksData;
-        });
-      }
-      // console.log(`Updated selection: ${Array.from(newSelected)}`)
-      return newSelected;
-    });
-  }, []);
-
-  const handleCheckboxClick = useCallback(
-    (e, id) => {
-      e.stopPropagation();
-      const isChecked = e.target.checked;
-      // console.log(`Checkbox clicked: ${id}, checked: ${isChecked}`)
-      handleSelectItem(id, isChecked);
-    },
-    [handleSelectItem]
-  );
-
-  const handleSelectAllItems = useCallback(
-    (e) => {
-      e.stopPropagation();
-      const checked = e.target.checked;
-      // console.log(`Select all clicked: ${checked}`)
-      if (checked) {
-        const allIds = filteredAccountData.map((item) => item._id);
-        setSelectedItems(new Set(allIds));
-        // console.log(`Selected all items: ${allIds}`)
-      } else {
-        setSelectedItems(new Set());
-        setAdditionalData({});
-        setRemarksData({});
-        // console.log("Cleared all selections")
-      }
-    },
-    [filteredAccountData]
-  );
-
   // ✅ SEPARATE: File upload handler
   const handleImageUpload = useCallback(async (id, e) => {
     const file = e.target.files[0];
@@ -1140,220 +1085,209 @@ function AccountDataPage() {
 
   // UPDATED: MAIN SUBMIT FUNCTION - Now also updates Admin Done column (Column P)
   const handleSubmit = async (specificId = null, specificStatus = null) => {
-    let selectedItemsArray = specificId ? [specificId] : Array.from(selectedItems);
+  let selectedItemsArray = specificId ? [specificId] : Array.from(selectedItems);
 
-    // Safety: Filter out any IDs that are not present in the current accountData
-    selectedItemsArray = selectedItemsArray.filter(id =>
-      accountData.some(account => account._id === id)
+  // NEW: Filter to only include items with "Done" or "Not Done" status
+  selectedItemsArray = selectedItemsArray.filter(id => {
+    const status = additionalData[id];
+    return status === "Done" || status === "Not Done" || status === "Yes" || status === "No";
+  });
+
+  // Safety: Filter out any IDs that are not present in the current accountData
+  selectedItemsArray = selectedItemsArray.filter(id =>
+    accountData.some(account => account._id === id)
+  );
+
+  if (selectedItemsArray.length === 0) {
+    if (!specificId) alert("Please select at least one item with 'Done' or 'Not Done' status to submit");
+    return;
+  }
+
+  // Rest of your existing validation code remains the same...
+  const missingRemarks = selectedItemsArray.filter((id) => {
+    const additionalStatus = additionalData[id];
+    const remarks = remarksData[id];
+    return (additionalStatus === "Not Done" || additionalStatus === "No") && (!remarks || remarks.trim() === "");
+  });
+
+  if (missingRemarks.length > 0) {
+    alert(
+      `Please provide remarks for items marked as "Not Done". ${missingRemarks.length} item(s) are missing remarks.`
     );
+    return;
+  }
 
-    if (selectedItemsArray.length === 0) {
-      if (!specificId) alert("Please select at least one item to submit");
-      return;
-    }
+  const missingRequiredImages = selectedItemsArray.filter((id) => {
+    const item = accountData.find((account) => account._id === id);
+    if (!item) return false;
+    const requiresAttachment =
+      item["col9"] && item["col9"].toUpperCase() === "YES";
+    return requiresAttachment && !item.image;
+  });
 
-    // Existing validation checks remain the same
-    const missingRemarks = selectedItemsArray.filter((id) => {
-      const additionalStatus = id === specificId ? specificStatus : additionalData[id];
-      const remarks = remarksData[id];
-      return (additionalStatus === "Not Done" || additionalStatus === "No") && (!remarks || remarks.trim() === "");
-    });
+  if (missingRequiredImages.length > 0) {
+    alert(
+      `Please upload images for all required attachments. ${missingRequiredImages.length} item(s) are missing required images.`
+    );
+    return;
+  }
 
-    if (missingRemarks.length > 0) {
-      alert(
-        `Please provide remarks for items marked as "Not Done". ${missingRemarks.length} item(s) are missing remarks.`
-      );
-      return;
-    }
+  // Rest of your handleSubmit function remains exactly the same...
+  try {
+    const today = new Date();
+    const todayFormatted = formatDateTimeToDDMMYYYY(today);
 
-    const missingRequiredImages = selectedItemsArray.filter((id) => {
+    // Prepare data for submission
+    const submissionData = [];
+    const imageUploadPromises = [];
+
+    // First handle all image uploads
+    for (const id of selectedItemsArray) {
       const item = accountData.find((account) => account._id === id);
-      if (!item) return false;
-      const requiresAttachment =
-        item["col9"] && item["col9"].toUpperCase() === "YES";
-      return requiresAttachment && !item.image;
-    });
 
-    if (missingRequiredImages.length > 0) {
-      alert(
-        `Please upload images for all required attachments. ${missingRequiredImages.length} item(s) are missing required images.`
-      );
-      return;
+      if (item.image instanceof File) {
+        const uploadPromise = fileToBase64(item.image)
+          .then(async (base64Data) => {
+            const formData = new FormData();
+            formData.append("action", "uploadFile");
+            formData.append("base64Data", base64Data);
+            formData.append(
+              "fileName",
+              `task_${item["col1"]}_${Date.now()}.${item.image.name
+                .split(".")
+                .pop()}`
+            );
+            formData.append("mimeType", item.image.type);
+            formData.append("folderId", CONFIG.DRIVE_FOLDER_ID);
+
+            const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
+              method: "POST",
+              body: formData,
+            });
+            return response.json();
+          })
+          .then((result) => {
+            if (result.success) {
+              return { id, imageUrl: result.fileUrl };
+            }
+            return { id, imageUrl: "" };
+          });
+
+        imageUploadPromises.push(uploadPromise);
+      }
     }
 
-    try {
-      const today = new Date();
-      // Format as DD/MM/YYYY HH:MM:SS for column K
-      const todayFormatted = formatDateTimeToDDMMYYYY(today);
+    // Wait for all image uploads to complete
+    const uploadResults = await Promise.all(imageUploadPromises);
+    const imageUrlMap = uploadResults.reduce((acc, result) => {
+      acc[result.id] = result.imageUrl;
+      return acc;
+    }, {});
 
-      // Prepare data for submission
-      const submissionData = [];
-      const imageUploadPromises = [];
+    // Prepare submission data
+    for (const id of selectedItemsArray) {
+      const item = accountData.find((account) => account._id === id);
+      const status = additionalData[id] || "";
 
-      // First handle all image uploads
-      for (const id of selectedItemsArray) {
+      const assignedTo = item["col4"] || "";
+      const isBuddyTask =
+        buddyTaskFilter &&
+        buddyTaskFilter !== "" &&
+        assignedTo.toLowerCase() !== username.toLowerCase();
+
+      const actualDateToSubmit = (status === "Done" || status === "Yes" || status === "Not Done" || status === "No") ? todayFormatted : "";
+
+      submissionData.push({
+        taskId: item["col1"],
+        rowIndex: item._rowIndex,
+        actualDate: actualDateToSubmit,
+        status: status,
+        remarks: remarksData[id] || "",
+        imageUrl:
+          imageUrlMap[id] ||
+          (item.image && typeof item.image === "string" ? item.image : ""),
+        buddyName: isBuddyTask ? username : "",
+      });
+    }
+
+    // Submit to Google Sheets
+    const formData = new FormData();
+    formData.append("sheetName", CONFIG.SHEET_NAME);
+    formData.append("action", "updateTaskData");
+    formData.append("rowData", JSON.stringify(submissionData));
+
+    setIsSubmitting(true);
+
+    const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
+      method: "POST",
+      body: formData,
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      // Move only submitted tasks to history
+      const submittedTasks = [];
+      const remainingTasks = accountData.filter(item => 
+        !selectedItemsArray.includes(item._id)
+      );
+
+      selectedItemsArray.forEach((id) => {
         const item = accountData.find((account) => account._id === id);
-
-        if (item.image instanceof File) {
-          const uploadPromise = fileToBase64(item.image)
-            .then(async (base64Data) => {
-              const formData = new FormData();
-              formData.append("action", "uploadFile");
-              formData.append("base64Data", base64Data);
-              formData.append(
-                "fileName",
-                `task_${item["col1"]}_${Date.now()}.${item.image.name
-                  .split(".")
-                  .pop()}`
-              );
-              formData.append("mimeType", item.image.type);
-              formData.append("folderId", CONFIG.DRIVE_FOLDER_ID);
-
-              const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
-                method: "POST",
-                body: formData,
-              });
-              return response.json();
-            })
-            .then((result) => {
-              if (result.success) {
-                return { id, imageUrl: result.fileUrl };
-              }
-              return { id, imageUrl: "" };
-            });
-
-          imageUploadPromises.push(uploadPromise);
-        }
-      }
-
-      // Wait for all image uploads to complete
-      const uploadResults = await Promise.all(imageUploadPromises);
-      const imageUrlMap = uploadResults.reduce((acc, result) => {
-        acc[result.id] = result.imageUrl;
-        return acc;
-      }, {});
-
-      // Prepare submission data
-      for (const id of selectedItemsArray) {
-        const item = accountData.find((account) => account._id === id);
-        const status = id === specificId ? specificStatus : (additionalData[id] || "");
-
-        const assignedTo = item["col4"] || ""; // Name column
-        const isBuddyTask =
-          buddyTaskFilter &&
-          buddyTaskFilter !== "" &&
-          assignedTo.toLowerCase() !== username.toLowerCase();
-
-        // Submit actualDate (Column K) for all final statuses
+        const status = additionalData[id] || "";
         const actualDateToSubmit = (status === "Done" || status === "Yes" || status === "Not Done" || status === "No") ? todayFormatted : "";
 
-        submissionData.push({
-          taskId: item["col1"], // Column B
-          rowIndex: item._rowIndex,
-          actualDate: actualDateToSubmit, // Column K
-          status: status, // Column M
-          remarks: remarksData[id] || "", // Column N
-          imageUrl:
+        const updatedItem = {
+          ...item,
+          col10: actualDateToSubmit,
+          col12: status,
+          col13: remarksData[id] || "",
+          col14:
             imageUrlMap[id] ||
-            (item.image && typeof item.image === "string" ? item.image : ""), // Column O
+            (item.image && typeof item.image === "string" ? item.image : ""),
+        };
 
-          buddyName: isBuddyTask ? username : "",
-        });
-      }
-
-
-      // Submit to Google Sheets
-      const formData = new FormData();
-      formData.append("sheetName", CONFIG.SHEET_NAME);
-      formData.append("action", "updateTaskData");
-      formData.append("rowData", JSON.stringify(submissionData));
-
-      setIsSubmitting(true);
-
-      const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
-        method: "POST",
-        body: formData,
+        submittedTasks.push(updatedItem);
       });
 
-      const result = await response.json();
-      if (result.success) {
-        // ONLY update UI state after successful server response
-        // Separate tasks into Done and Not Done
-        const doneTasksForHistory = [];
-        const notDoneTasksToKeep = [];
+      // Update accountData: remove submitted tasks
+      setAccountData(remainingTasks);
+      
+      // Add submitted tasks to history
+      setHistoryData((prev) => [...submittedTasks, ...prev]);
 
-        selectedItemsArray.forEach((id) => {
-          const item = accountData.find((account) => account._id === id);
-          const status = id === specificId ? specificStatus : (additionalData[id] || "");
-          const actualDateToSubmit = (status === "Done" || status === "Yes" || status === "Not Done" || status === "No") ? todayFormatted : "";
+      // Clean up state
+      setSelectedItems((prev) => {
+        const next = new Set(prev);
+        selectedItemsArray.forEach(id => next.delete(id));
+        return next;
+      });
+      
+      setAdditionalData((prev) => {
+        const next = { ...prev };
+        selectedItemsArray.forEach(id => delete next[id]);
+        return next;
+      });
+      
+      setRemarksData((prev) => {
+        const next = { ...prev };
+        selectedItemsArray.forEach(id => delete next[id]);
+        return next;
+      });
 
-          const updatedItem = {
-            ...item,
-            col10: actualDateToSubmit, // Column K
-            col12: status, // Column M
-            col13: remarksData[id] || "", // Column N
-            col14:
-              imageUrlMap[id] ||
-              (item.image && typeof item.image === "string" ? item.image : ""), // Column O
-          };
-
-          // Move both "Done" and "Not Done" to history
-          if (status === "Done" || status === "Yes" || status === "Not Done" || status === "No") {
-            doneTasksForHistory.push(updatedItem);
-          } else {
-            // Keep in pending ONLY if no status was assigned (shouldn't happen with button enabled logic)
-            notDoneTasksToKeep.push(updatedItem);
-          }
-        });
-
-        // Update accountData: remove Done tasks, keep Not Done tasks with updated data
-        setAccountData((prev) => {
-          // Remove the submitted items first
-          const filtered = prev.filter((item) => !selectedItemsArray.includes(item._id));
-          // Add back the Not Done tasks with updated data
-          return [...filtered, ...notDoneTasksToKeep];
-        });
-
-        // Only add Done tasks to history
-        setHistoryData((prev) => [...doneTasksForHistory, ...prev]);
-
-        // Clean up state
-        if (specificId) {
-          setSelectedItems((prev) => {
-            const next = new Set(prev);
-            next.delete(specificId);
-            return next;
-          });
-          setAdditionalData((prev) => {
-            const next = { ...prev };
-            delete next[specificId];
-            return next;
-          });
-          setRemarksData((prev) => {
-            const next = { ...prev };
-            delete next[specificId];
-            return next;
-          });
-        } else {
-          setSelectedItems(new Set());
-          setAdditionalData({});
-          setRemarksData({});
-        }
-
-        setSuccessMessage(
-          `Successfully submitted ${selectedItemsArray.length} task(s)!`
-        );
-      } else {
-        console.error("Background submission failed:", result.error);
-        alert(`Submission failed: ${result.error || "Please try again."}`);
-      }
-    } catch (error) {
-      console.error("Submission error:", error);
-      alert("Error occurred during submission. Please try again.");
-    } finally {
-      setIsSubmitting(false);
+      setSuccessMessage(
+        `Successfully submitted ${selectedItemsArray.length} task(s)!`
+      );
+    } else {
+      console.error("Background submission failed:", result.error);
+      alert(`Submission failed: ${result.error || "Please try again."}`);
     }
-  };
+  } catch (error) {
+    console.error("Submission error:", error);
+    alert("Error occurred during submission. Please try again.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   // Convert Set to Array for display
   const selectedItemsCount = selectedItems.size;
@@ -2329,37 +2263,46 @@ function AccountDataPage() {
                               </div>
                             </td>
                             <td className="px-3 py-4 bg-yellow-50 min-w-[100px]">
-                              <select
-                                value={additionalData[account._id] || ""}
-                                onChange={(e) => {
-                                  const newStatus = e.target.value;
-                                  setAdditionalData((prev) => ({
-                                    ...prev,
-                                    [account._id]: newStatus,
-                                  }));
+  <select
+    value={additionalData[account._id] || ""}
+    onChange={(e) => {
+      const newStatus = e.target.value;
+      setAdditionalData((prev) => ({
+        ...prev,
+        [account._id]: newStatus,
+      }));
 
-                                  // Auto-select for submission
-                                  setSelectedItems((prev) => {
-                                    const next = new Set(prev);
-                                    next.add(account._id);
-                                    return next;
-                                  });
+      // Auto-select for submission when status is selected
+      if (newStatus) {
+        setSelectedItems((prev) => {
+          const next = new Set(prev);
+          next.add(account._id);
+          return next;
+        });
+      } else {
+        // Remove from selection when status is cleared
+        setSelectedItems((prev) => {
+          const next = new Set(prev);
+          next.delete(account._id);
+          return next;
+        });
+      }
 
-                                  if (newStatus !== "Not Done") {
-                                    setRemarksData((prev) => {
-                                      const newData = { ...prev };
-                                      delete newData[account._id];
-                                      return newData;
-                                    });
-                                  }
-                                }}
-                                className="border border-gray-300 rounded-md px-2 py-1 w-full disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
-                              >
-                                <option value="">Select...</option>
-                                <option value="Done">Done</option>
-                                <option value="Not Done">Not Done</option>
-                              </select>
-                            </td>
+      if (newStatus !== "Not Done") {
+        setRemarksData((prev) => {
+          const newData = { ...prev };
+          delete newData[account._id];
+          return newData;
+        });
+      }
+    }}
+    className="border border-gray-300 rounded-md px-2 py-1 w-full disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
+  >
+    <option value="">Select...</option>
+    <option value="Done">Done</option>
+    <option value="Not Done">Not Done</option>
+  </select>
+</td>
                             <td className="px-3 py-4 bg-orange-50 min-w-[150px]">
                               <input
                                 type="text"
